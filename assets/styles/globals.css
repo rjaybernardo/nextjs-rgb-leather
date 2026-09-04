@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@utility wrapper {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+
+  @media (width >= 48rem) {
+    padding-inline: 2.5rem;
+  }
+}
+
+@utility flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+@utility flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@utility h1-bold {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+
+  @media (width >= 64rem) {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+}
+
+@utility h2-bold {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+
+  @media (width >= 64rem) {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
+
+@utility h3-bold {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+
+  @media (width >= 64rem) {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
