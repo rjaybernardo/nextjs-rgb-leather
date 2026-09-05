@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { LATEST_PRODUCTS_LIMIT } from "@/lib/constants";
+import { prisma } from "@/lib/prisma";
 import { convertToPlainObject } from "@/lib/utils";
 
 export async function getLatestProducts() {
@@ -19,4 +19,23 @@ export async function getLatestProducts() {
     price: Number(product.price),
     rating: Number(product.rating),
   }));
+}
+
+// Get a single product by slug
+export async function getProductBySlug(slug: string) {
+  const product = await prisma.product.findUnique({
+    where: {
+      slug,
+    },
+  });
+
+  if (!product) {
+    return null;
+  }
+
+  return {
+    ...convertToPlainObject(product),
+    price: Number(product.price),
+    rating: Number(product.rating),
+  };
 }
