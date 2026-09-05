@@ -1,15 +1,46 @@
 "use client";
 
 import Link from "next/link";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signInWithCredentials } from "@/lib/actions/user.actions";
 import { signInDefaultValues } from "@/lib/constants";
 
-export default function CredentialsSignInForm() {
+const initialState = {
+  success: false,
+  message: "",
+};
+
+function SignInButton() {
+  const { pending } = useFormStatus();
+
   return (
-    <form>
+    <Button
+      type="submit"
+      disabled={pending}
+      className="w-full"
+      variant="default"
+    >
+      {pending ? "Signing In..." : "Sign In with credentials"}
+    </Button>
+  );
+}
+
+export default function CredentialsSignInForm() {
+  const [data, action] = useActionState(signInWithCredentials, initialState);
+
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
+
       <div className="space-y-6">
         <div>
           <Label htmlFor="email">Email</Label>
@@ -38,13 +69,15 @@ export default function CredentialsSignInForm() {
         </div>
 
         <div>
-          <Button className="w-full" variant="default">
-            Sign In with credentials
-          </Button>
+          <SignInButton />
         </div>
 
+        {!data.success && data.message && (
+          <div className="text-center text-destructive">{data.message}</div>
+        )}
+
         <div className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link className="link" href="/sign-up">
             Sign Up
           </Link>

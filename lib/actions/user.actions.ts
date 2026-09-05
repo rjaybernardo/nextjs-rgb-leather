@@ -5,18 +5,28 @@ import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { signInFormSchema } from "../validator";
 
-// Sign in the user with credentials
 export async function signInWithCredentials(
   _prevState: unknown,
   formData: FormData,
 ) {
+  console.log("SIGN IN ACTION CALLED");
   try {
     const user = signInFormSchema.parse({
       email: formData.get("email"),
       password: formData.get("password"),
     });
 
-    await signIn("credentials", user);
+    const callbackUrlValue = formData.get("callbackUrl");
+
+    const callbackUrl =
+      typeof callbackUrlValue === "string" && callbackUrlValue
+        ? callbackUrlValue
+        : "/";
+
+    await signIn("credentials", {
+      ...user,
+      redirectTo: callbackUrl,
+    });
 
     return {
       success: true,
@@ -43,7 +53,6 @@ export async function signInWithCredentials(
   }
 }
 
-// Sign the user out
 export async function signOutUser() {
-  await signOut();
+  await signOut({ redirectTo: "/" });
 }

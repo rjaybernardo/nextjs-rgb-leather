@@ -19,11 +19,24 @@ export const metadata: Metadata = {
   title: "Sign In",
 };
 
-export default async function SignInPage() {
+type SignInPageProps = {
+  searchParams: Promise<{
+    callbackUrl?: string | string[];
+  }>;
+};
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const params = await searchParams;
+
+  const callbackUrl = Array.isArray(params.callbackUrl)
+    ? params.callbackUrl[0]
+    : params.callbackUrl;
+
   const session = await auth();
+  console.log("SIGN-IN PAGE SESSION:", session);
 
   if (session) {
-    redirect("/");
+    redirect(callbackUrl || "/");
   }
 
   return (
