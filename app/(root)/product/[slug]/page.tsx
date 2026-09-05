@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import ProductPrice from "@/components/shared/product/product-price";
 import { Card, CardContent } from "@/components/ui/card";
 import { getProductBySlug } from "@/lib/actions/product.actions";
+import ProductImages from "@/components/shared/product/product-images";
 
 type ProductDetailsPageProps = {
   params: Promise<{
@@ -26,9 +27,8 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         {/* Images Column */}
         <div className="md:col-span-2">
-          {/* Product images will be added in the next lesson. */}
+          <ProductImages images={product.images} />
         </div>
-
         {/* Details Column */}
         <div className="md:col-span-2 p-5">
           <div className="flex flex-col gap-6">
