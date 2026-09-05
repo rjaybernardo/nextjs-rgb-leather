@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import CredentialsSignInForm from "./credentials-signin-form";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -38,7 +39,7 @@ export default function SignInPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Sign-in form will be added in the next lesson */}
+          <CredentialsSignInForm />
         </CardContent>
       </Card>
     </div>
