@@ -1,10 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, UserIcon } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
-import ModeToggle from "./mode-toggle";
+
+import Menu from "./menu";
 
 const Header = () => {
   return (
@@ -26,23 +25,7 @@ const Header = () => {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
-          <ModeToggle />
-          <Link
-            href="/cart"
-            className={buttonVariants({
-              variant: "ghost",
-            })}
-          >
-            <ShoppingCart />
-            <span>Cart</span>
-          </Link>
-
-          <Link href="/sign-in" className={buttonVariants()}>
-            <UserIcon />
-            <span>Sign In</span>
-          </Link>
-        </div>
+        <Menu />
       </div>
     </header>
   );
