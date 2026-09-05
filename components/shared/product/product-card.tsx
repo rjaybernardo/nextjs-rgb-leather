@@ -5,11 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import ProductPrice from "@/components/shared/product/product-price";
 import type { Product } from "@/types";
 
-type ProductCardProps = {
-  product: Product;
-};
-
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product }: { product: Product }) => {
   return (
     <Card className="w-full overflow-hidden">
       <CardHeader className="p-0">

@@ -2,13 +2,15 @@ import ProductCard from "./product-card";
 
 import type { Product } from "@/types";
 
-type ProductListProps = {
+const ProductList = ({
+  data,
+  title,
+  limit,
+}: {
   data: Product[];
   title?: string;
   limit?: number;
-};
-
-const ProductList = ({ data, title, limit }: ProductListProps) => {
+}) => {
   const limitedData = limit !== undefined ? data.slice(0, limit) : data;
 
   return (
