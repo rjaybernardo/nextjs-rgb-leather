@@ -1,3 +1,5 @@
+import ProductCard from "./product-card";
+
 import type { Product } from "@/types";
 
 type ProductListProps = {
@@ -16,9 +18,7 @@ const ProductList = ({ data, title, limit }: ProductListProps) => {
       {limitedData.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {limitedData.map((product) => (
-            <div key={product.slug} className="rounded-lg border p-4">
-              {product.name}
-            </div>
+            <ProductCard key={product.slug} product={product} />
           ))}
         </div>
       ) : (
