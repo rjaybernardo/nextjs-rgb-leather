@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import ProductPrice from "@/components/shared/product/product-price";
 import type { Product } from "@/types";
 
 type ProductCardProps = {
@@ -18,6 +19,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             alt={product.name}
             width={300}
             height={300}
+            loading="eager"
             className="aspect-square w-full object-cover"
           />
         </Link>
@@ -34,7 +36,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <p>{product.rating} stars</p>
 
           {product.stock > 0 ? (
-            <p className="font-bold">${product.price.toFixed(2)}</p>
+            <ProductPrice value={product.price} />
           ) : (
             <p className="font-bold text-destructive">Out of Stock</p>
           )}
