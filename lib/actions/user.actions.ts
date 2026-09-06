@@ -5,7 +5,7 @@ import { AuthError } from "next-auth";
 
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { formatError } from "@/lib/utils";
+import { formatError } from "@/lib/utils/server";
 
 import { signInFormSchema, signUpFormSchema } from "../validator";
 

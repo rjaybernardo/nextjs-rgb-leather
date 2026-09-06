@@ -24,7 +24,7 @@ const ProductImages = ({ images }: ProductImagesProps) => {
           src={images[current]}
           alt="Product image"
           fill
-          priority
+          loading="eager"
           sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover object-center"
         />
@@ -50,6 +50,7 @@ const ProductImages = ({ images }: ProductImagesProps) => {
               src={image}
               alt={`Product image ${index + 1}`}
               fill
+              loading="lazy"
               sizes="80px"
               className="object-cover"
             />
