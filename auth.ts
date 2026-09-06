@@ -30,13 +30,16 @@ export const authConfigWithCredentials = {
       },
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (
+          typeof credentials?.email !== "string" ||
+          typeof credentials?.password !== "string"
+        ) {
           return null;
         }
 
         const user = await prisma.user.findFirst({
           where: {
-            email: credentials.email as string,
+            email: credentials.email,
           },
         });
 
@@ -45,7 +48,7 @@ export const authConfigWithCredentials = {
         }
 
         const passwordMatches = compareSync(
-          credentials.password as string,
+          credentials.password,
           user.password,
         );
 
