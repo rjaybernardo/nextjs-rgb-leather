@@ -64,6 +64,13 @@ export async function signUp(_prevState: unknown, formData: FormData) {
       confirmPassword: formData.get("confirmPassword"),
     });
 
+    const callbackUrlValue = formData.get("callbackUrl");
+
+    const callbackUrl =
+      typeof callbackUrlValue === "string" && callbackUrlValue
+        ? callbackUrlValue
+        : "/";
+
     const plainPassword = user.password;
 
     const hashedPassword = hashSync(user.password, 10);
@@ -79,6 +86,7 @@ export async function signUp(_prevState: unknown, formData: FormData) {
     await signIn("credentials", {
       email: user.email,
       password: plainPassword,
+      redirectTo: callbackUrl,
     });
 
     return {
