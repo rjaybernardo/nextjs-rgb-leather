@@ -43,3 +43,23 @@ export const signInFormSchema = z.object({
     error: "Password must be at least 3 characters",
   }),
 });
+
+export const signUpFormSchema = z
+  .object({
+    name: z.string().min(3, {
+      error: "Name must be at least 3 characters",
+    }),
+    email: z.email({
+      error: "Invalid email address",
+    }),
+    password: z.string().min(3, {
+      error: "Password must be at least 3 characters",
+    }),
+    confirmPassword: z.string().min(3, {
+      error: "Confirm password must be at least 3 characters",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
