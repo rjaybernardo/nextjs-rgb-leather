@@ -1,4 +1,4 @@
-import { EllipsisVertical, ShoppingCart, UserIcon } from "lucide-react";
+import { EllipsisVertical, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import {
 } from "@/components/ui/sheet";
 
 import ModeToggle from "./mode-toggle";
+import UserButton from "./user-button";
 
 const Menu = () => {
   return (
     <div className="flex items-center justify-end gap-2">
+      {/* Desktop menu */}
       <nav className="hidden items-center gap-1 md:flex">
         <ModeToggle />
 
@@ -28,12 +30,10 @@ const Menu = () => {
           <span>Cart</span>
         </Link>
 
-        <Link href="/sign-in" className={buttonVariants()}>
-          <UserIcon />
-          <span>Sign In</span>
-        </Link>
+        <UserButton />
       </nav>
 
+      {/* Mobile menu */}
       <nav className="md:hidden">
         <Sheet>
           <SheetTrigger
@@ -67,15 +67,7 @@ const Menu = () => {
                 <span>Cart</span>
               </Link>
 
-              <Link
-                href="/sign-in"
-                className={buttonVariants({
-                  className: "w-full justify-start",
-                })}
-              >
-                <UserIcon />
-                <span>Sign In</span>
-              </Link>
+              <UserButton />
             </div>
           </SheetContent>
         </Sheet>
