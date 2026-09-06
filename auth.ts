@@ -5,8 +5,8 @@ import Credentials from "next-auth/providers/credentials";
 
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
-import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/auth.config";
+import { prisma } from "@/lib/prisma";
 
 export const authConfigWithCredentials = {
   ...authConfig,
@@ -57,6 +57,7 @@ export const authConfigWithCredentials = {
           id: user.id,
           name: user.name,
           email: user.email,
+          role: user.role,
         };
       },
     }),
@@ -65,9 +66,47 @@ export const authConfigWithCredentials = {
   callbacks: {
     ...authConfig.callbacks,
 
+    async jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+
+        if (user.name === "NO_NAME" && user.email) {
+          const generatedName = user.email.split("@")[0];
+
+          token.name = generatedName;
+
+          await prisma.user.update({
+            where: {
+              id: user.id,
+            },
+            data: {
+              name: generatedName,
+            },
+          });
+        } else {
+          token.name = user.name;
+        }
+      }
+
+      if (trigger === "update" && session?.user?.name) {
+        token.name = session.user.name;
+      }
+
+      return token;
+    },
+
     async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
+      if (session.user) {
+        if (typeof token.id === "string") {
+          session.user.id = token.id;
+        }
+
+        session.user.name = typeof token.name === "string" ? token.name : null;
+
+        if (typeof token.role === "string") {
+          session.user.role = token.role;
+        }
       }
 
       return session;

@@ -1,7 +1,7 @@
 "use server";
 
-import { AuthError } from "next-auth";
 import { hashSync } from "bcrypt-ts-edge";
+import { AuthError } from "next-auth";
 
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -57,22 +57,15 @@ export async function signInWithCredentials(
 }
 
 export async function signUp(_prevState: unknown, formData: FormData) {
+  let user;
+
   try {
-    const user = signUpFormSchema.parse({
+    user = signUpFormSchema.parse({
       name: formData.get("name"),
       email: formData.get("email"),
       password: formData.get("password"),
       confirmPassword: formData.get("confirmPassword"),
     });
-
-    const callbackUrlValue = formData.get("callbackUrl");
-
-    const callbackUrl =
-      typeof callbackUrlValue === "string" && callbackUrlValue
-        ? callbackUrlValue
-        : "/";
-
-    const plainPassword = user.password;
 
     const hashedPassword = hashSync(user.password, 10);
 
@@ -83,39 +76,36 @@ export async function signUp(_prevState: unknown, formData: FormData) {
         password: hashedPassword,
       },
     });
-
-    await signIn("credentials", {
-      email: user.email,
-      password: plainPassword,
-      redirectTo: callbackUrl,
-    });
-
-    return {
-      success: true,
-      message: "User created successfully",
-    };
   } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return {
-            success: false,
-            message: "User created, but automatic sign in failed",
-          };
-
-        default:
-          return {
-            success: false,
-            message: "Something went wrong",
-          };
-      }
-    }
-
     return {
       success: false,
       message: formatError(error),
     };
   }
+
+  const callbackUrlValue = formData.get("callbackUrl");
+
+  const callbackUrl =
+    typeof callbackUrlValue === "string" && callbackUrlValue
+      ? callbackUrlValue
+      : "/";
+
+  /*
+   * Do not wrap signIn() in the database error handler above.
+   *
+   * Auth.js uses a redirect when authentication succeeds.
+   * That redirect must be allowed to propagate through Next.js.
+   */
+  await signIn("credentials", {
+    email: user.email,
+    password: user.password,
+    redirectTo: callbackUrl,
+  });
+
+  return {
+    success: true,
+    message: "User created successfully",
+  };
 }
 
 export async function signOutUser() {
