@@ -10,6 +10,7 @@ import { formatError } from "@/lib/utils/server";
 import { cartItemSchema } from "@/lib/validator";
 import type { CartItem } from "@/types";
 
+// Add item to cart in database
 export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
   try {
     // Check for session cart cookie
@@ -19,17 +20,17 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       throw new Error("Cart session not found");
     }
 
-    // Get the current session and user ID
+    // Get session and user ID
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Get the user's existing cart
+    // Get cart from database
     const cart = await getMyCart();
 
-    // Validate the submitted cart item
+    // Parse and validate submitted item data
     const item = cartItemSchema.parse(data);
 
-    // Find the product in the database
+    // Find product in database
     const product = await prisma.product.findUnique({
       where: {
         id: item.productId,
@@ -61,7 +62,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
   }
 }
 
-// Get the current user's cart from the database
+// Get user cart from database
 export async function getMyCart() {
   // Check for session cart cookie
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -70,11 +71,11 @@ export async function getMyCart() {
     return undefined;
   }
 
-  // Get the current session and user ID
+  // Get session and user ID
   const session = await auth();
   const userId = session?.user?.id;
 
-  // Find the cart belonging to the user or guest session
+  // Find cart for authenticated user or guest session
   const cart = await prisma.cart.findFirst({
     where: userId
       ? {
@@ -89,7 +90,7 @@ export async function getMyCart() {
     return undefined;
   }
 
-  // Convert Prisma Decimal values to strings
+  // Convert Decimal values to strings
   return convertToPlainObject({
     ...cart,
     items: cart.items as CartItem[],
