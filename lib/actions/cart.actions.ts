@@ -1,16 +1,37 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { convertToPlainObject } from "@/lib/utils";
+import { convertToPlainObject, round2 } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
-import { cartItemSchema } from "@/lib/validator";
+import { cartItemSchema, insertCartSchema } from "@/lib/validator";
 import type { CartItem } from "@/types";
 
-// Add item to cart in database
+// Calculate cart price based on items
+const calcPrice = (items: z.infer<typeof cartItemSchema>[]) => {
+  const itemsPrice = round2(
+    items.reduce((acc, item) => acc + Number(item.price) * item.qty, 0),
+  );
+
+  const shippingPrice = round2(itemsPrice > 100 ? 0 : 10);
+
+  const taxPrice = round2(0.15 * itemsPrice);
+
+  const totalPrice = round2(itemsPrice + shippingPrice + taxPrice);
+
+  return {
+    itemsPrice: itemsPrice.toFixed(2),
+    shippingPrice: shippingPrice.toFixed(2),
+    taxPrice: taxPrice.toFixed(2),
+    totalPrice: totalPrice.toFixed(2),
+  };
+};
+
+// Add item to cart
 export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
   try {
     // Check for session cart cookie
@@ -24,7 +45,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Get cart from database
+    // Get existing cart
     const cart = await getMyCart();
 
     // Parse and validate submitted item data
@@ -41,18 +62,31 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       throw new Error("Product not found");
     }
 
-    // Testing
-    console.log({
-      "Session Cart ID": sessionCartId,
-      "User ID": userId,
-      "Item Requested": item,
-      "Product Found": product,
-      cart,
-    });
+    // Create a new cart if one does not already exist
+    if (!cart) {
+      const newCart = insertCartSchema.parse({
+        userId,
+        sessionCartId,
+        items: [item],
+        ...calcPrice([item]),
+      });
+
+      await prisma.cart.create({
+        data: newCart,
+      });
+
+      // Revalidate the product page
+      revalidatePath(`/product/${product.slug}`);
+
+      return {
+        success: true,
+        message: "Item added to cart successfully",
+      };
+    }
 
     return {
       success: true,
-      message: "Testing Cart",
+      message: "Item already exists in cart",
     };
   } catch (error) {
     return {
