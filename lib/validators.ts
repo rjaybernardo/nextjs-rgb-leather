@@ -120,6 +120,7 @@ export const insertCartSchema = z.object({
   userId: z.string().optional().nullable(),
 });
 
+// Shipping Address
 export const shippingAddressSchema = z.object({
   fullName: z.string().min(3, "Name must be at least 3 characters"),
 
@@ -145,3 +146,54 @@ export const paymentMethodSchema = z
     path: ["type"],
     message: "Invalid payment method",
   });
+
+// Order
+export const insertOrderSchema = z.object({
+  userId: z.string().min(1, {
+    error: "User is required",
+  }),
+
+  itemsPrice: currency,
+
+  shippingPrice: currency,
+
+  taxPrice: currency,
+
+  totalPrice: currency,
+
+  paymentMethod: z.string().refine((data) => PAYMENT_METHODS.includes(data), {
+    error: "Invalid payment method",
+  }),
+
+  shippingAddress: shippingAddressSchema,
+});
+
+// Order Item
+export const insertOrderItemSchema = z.object({
+  productId: z.string().min(1, {
+    error: "Product is required",
+  }),
+
+  slug: z.string().min(1, {
+    error: "Slug is required",
+  }),
+
+  image: z.string().min(1, {
+    error: "Image is required",
+  }),
+
+  name: z.string().min(1, {
+    error: "Name is required",
+  }),
+
+  price: currency,
+
+  qty: z
+    .number()
+    .int({
+      error: "Quantity must be a whole number",
+    })
+    .positive({
+      error: "Quantity must be greater than zero",
+    }),
+});
