@@ -1,6 +1,7 @@
 "use server";
 
-import { hashSync } from "bcrypt-ts-edge";
+import { cookies } from "next/headers";
+import { compareSync, hashSync } from "bcrypt-ts-edge";
 import { AuthError } from "next-auth";
 
 import { auth, signIn, signOut } from "@/auth";
@@ -13,6 +14,39 @@ import {
   signUpFormSchema,
 } from "../validators";
 
+const persistGuestCart = async (userId: string) => {
+  const sessionCartId = (await cookies()).get("sessionCartId")?.value;
+
+  if (!sessionCartId) {
+    return;
+  }
+
+  const sessionCart = await prisma.cart.findFirst({
+    where: {
+      sessionCartId,
+    },
+  });
+
+  if (!sessionCart) {
+    return;
+  }
+
+  await prisma.cart.deleteMany({
+    where: {
+      userId,
+    },
+  });
+
+  await prisma.cart.update({
+    where: {
+      id: sessionCart.id,
+    },
+    data: {
+      userId,
+    },
+  });
+};
+
 export async function signInWithCredentials(
   _prevState: unknown,
   formData: FormData,
@@ -22,6 +56,30 @@ export async function signInWithCredentials(
       email: formData.get("email"),
       password: formData.get("password"),
     });
+
+    const currentUser = await prisma.user.findFirst({
+      where: {
+        email: user.email,
+      },
+    });
+
+    if (!currentUser || !currentUser.password) {
+      return {
+        success: false,
+        message: "Invalid email or password",
+      };
+    }
+
+    const passwordMatches = compareSync(user.password, currentUser.password);
+
+    if (!passwordMatches) {
+      return {
+        success: false,
+        message: "Invalid email or password",
+      };
+    }
+
+    await persistGuestCart(currentUser.id);
 
     const callbackUrlValue = formData.get("callbackUrl");
 
@@ -73,13 +131,15 @@ export async function signUp(_prevState: unknown, formData: FormData) {
 
     const hashedPassword = hashSync(user.password, 10);
 
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: {
         name: user.name,
         email: user.email,
         password: hashedPassword,
       },
     });
+
+    await persistGuestCart(createdUser.id);
   } catch (error) {
     return {
       success: false,
