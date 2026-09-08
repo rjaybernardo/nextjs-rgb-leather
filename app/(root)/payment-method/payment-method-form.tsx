@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { useTransition } from "react";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 
 import CheckoutSteps from "@/components/shared/checkout-steps";
@@ -43,7 +43,11 @@ const PaymentMethodForm = ({
       const result = await updateUserPaymentMethod(values);
 
       if (!result.success) {
-        console.error(result.message);
+        form.setError("type", {
+          type: "server",
+          message: result.message,
+        });
+
         return;
       }
 
@@ -52,14 +56,16 @@ const PaymentMethodForm = ({
   };
 
   return (
-    <div className="mx-auto max-w-md space-y-4">
+    <div className="mx-auto max-w-md space-y-6">
       <CheckoutSteps current={2} />
 
-      <h1 className="h2-bold">Payment Method</h1>
+      <div>
+        <h1 className="h2-bold mt-4">Payment Method</h1>
 
-      <p className="text-sm text-muted-foreground">
-        Please select your preferred payment method
-      </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Please select your preferred payment method
+        </p>
+      </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FieldGroup>
@@ -70,30 +76,43 @@ const PaymentMethodForm = ({
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel>Payment Method</FieldLabel>
 
-                <div className="space-y-3">
-                  {PAYMENT_METHODS.map((method) => (
-                    <label
-                      key={method}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                    >
-                      <input
-                        type="radio"
-                        name={field.name}
-                        value={method}
-                        checked={field.value === method}
-                        onChange={() => field.onChange(method)}
-                        onBlur={field.onBlur}
-                        disabled={isPending}
-                        className="size-4"
-                      />
+                <div className="flex flex-col gap-3">
+                  {PAYMENT_METHODS.map((paymentMethod) => {
+                    const id = `payment-${paymentMethod
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")}`;
 
-                      <span className="text-sm font-medium">
-                        {method === "CashOnDelivery"
-                          ? "Cash on Delivery"
-                          : method}
-                      </span>
-                    </label>
-                  ))}
+                    const label =
+                      paymentMethod === "CashOnDelivery"
+                        ? "Cash on Delivery"
+                        : paymentMethod;
+
+                    return (
+                      <label
+                        key={paymentMethod}
+                        htmlFor={id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${
+                          field.value === paymentMethod
+                            ? "border-primary bg-primary/5"
+                            : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <input
+                          id={id}
+                          type="radio"
+                          name={field.name}
+                          value={paymentMethod}
+                          checked={field.value === paymentMethod}
+                          onChange={() => field.onChange(paymentMethod)}
+                          onBlur={field.onBlur}
+                          disabled={isPending}
+                          className="size-4 accent-primary"
+                        />
+
+                        <span className="text-sm font-medium">{label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
 
                 {fieldState.invalid && (
@@ -104,16 +123,14 @@ const PaymentMethodForm = ({
           />
         </FieldGroup>
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={isPending}>
-            {isPending ? (
-              <Loader className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowRight className="h-4 w-4" />
-            )}
-            Continue
-          </Button>
-        </div>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? (
+            <Loader className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowRight className="h-4 w-4" />
+          )}
+          Continue
+        </Button>
       </form>
     </div>
   );
