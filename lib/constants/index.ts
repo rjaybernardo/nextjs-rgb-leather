@@ -14,6 +14,7 @@ export const signInDefaultValues = {
   email: "admin@example.com",
   password: "123456",
 };
+
 export const signUpDefaultValues = {
   name: "",
   email: "",
@@ -28,3 +29,10 @@ export const shippingAddressDefaultValues = {
   postalCode: "12345",
   country: "USA",
 };
+
+export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
+  ? process.env.PAYMENT_METHODS.split(",").map((method) => method.trim())
+  : ["PayPal", "Stripe", "CashOnDelivery"];
+
+export const DEFAULT_PAYMENT_METHOD =
+  process.env.DEFAULT_PAYMENT_METHOD || "PayPal";

@@ -1,16 +1,11 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export const proxy = auth((request) => {
-  const sessionCartId = request.cookies.get("sessionCartId")?.value;
-
-  if (sessionCartId) {
-    return NextResponse.next();
-  }
-
+export const proxy = () => {
   const response = NextResponse.next();
 
-  response.cookies.set("sessionCartId", crypto.randomUUID(), {
+  const sessionCartId = crypto.randomUUID();
+
+  response.cookies.set("sessionCartId", sessionCartId, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -18,7 +13,7 @@ export const proxy = auth((request) => {
   });
 
   return response;
-});
+};
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],

@@ -3,12 +3,14 @@
 import { cookies } from "next/headers";
 import { compareSync, hashSync } from "bcrypt-ts-edge";
 import { AuthError } from "next-auth";
+import { z } from "zod";
 
 import { auth, signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 
 import {
+  paymentMethodSchema,
   shippingAddressSchema,
   signInFormSchema,
   signUpFormSchema,
@@ -233,6 +235,56 @@ export async function updateUserAddress(
     return {
       success: true,
       message: "User updated successfully.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+// Update user's payment method
+export async function updateUserPaymentMethod(
+  data: z.infer<typeof paymentMethodSchema>,
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        message: "You must be signed in to update your payment method.",
+      };
+    }
+
+    const currentUser = await prisma.user.findFirst({
+      where: {
+        id: session.user.id,
+      },
+    });
+
+    if (!currentUser) {
+      return {
+        success: false,
+        message: "User not found.",
+      };
+    }
+
+    const paymentMethod = paymentMethodSchema.parse(data);
+
+    await prisma.user.update({
+      where: {
+        id: currentUser.id,
+      },
+      data: {
+        paymentMethod: paymentMethod.type,
+      },
+    });
+
+    return {
+      success: true,
+      message: "Payment method updated successfully.",
     };
   } catch (error) {
     return {

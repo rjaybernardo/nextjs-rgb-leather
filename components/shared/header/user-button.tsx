@@ -16,7 +16,7 @@ import { signOutUser } from "@/lib/actions/user.actions";
 const UserButton = async () => {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user) {
     return (
       <Link href="/sign-in">
         <Button variant="default" size="lg" className="gap-2 rounded-lg px-5">
@@ -27,7 +27,7 @@ const UserButton = async () => {
     );
   }
 
-  const firstInitial = session.user?.name?.charAt(0).toUpperCase() ?? "";
+  const firstInitial = session.user.name?.charAt(0).toUpperCase() ?? "";
 
   return (
     <div className="flex items-center gap-2">
@@ -48,11 +48,11 @@ const UserButton = async () => {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {session.user?.name}
+                  {session.user.name}
                 </p>
 
                 <p className="text-xs leading-none text-muted-foreground">
-                  {session.user?.email}
+                  {session.user.email}
                 </p>
               </div>
             </DropdownMenuLabel>
