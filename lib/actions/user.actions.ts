@@ -3,11 +3,15 @@
 import { hashSync } from "bcrypt-ts-edge";
 import { AuthError } from "next-auth";
 
-import { signIn, signOut } from "@/auth";
+import { auth, signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 
-import { signInFormSchema, signUpFormSchema } from "../validators";
+import {
+  shippingAddressSchema,
+  signInFormSchema,
+  signUpFormSchema,
+} from "../validators";
 
 export async function signInWithCredentials(
   _prevState: unknown,
@@ -126,4 +130,54 @@ export async function getUserById(userId: string) {
   }
 
   return user;
+}
+
+// Update user's shipping address
+export async function updateUserAddress(
+  data: import("@/types").ShippingAddress,
+) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        message: "You must be signed in to update your address.",
+      };
+    }
+
+    const currentUser = await prisma.user.findFirst({
+      where: {
+        id: session.user.id,
+      },
+    });
+
+    if (!currentUser) {
+      return {
+        success: false,
+        message: "User not found.",
+      };
+    }
+
+    const address = shippingAddressSchema.parse(data);
+
+    await prisma.user.update({
+      where: {
+        id: currentUser.id,
+      },
+      data: {
+        address,
+      },
+    });
+
+    return {
+      success: true,
+      message: "User updated successfully.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
 }
