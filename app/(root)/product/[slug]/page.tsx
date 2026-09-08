@@ -5,7 +5,7 @@ import ProductPrice from "@/components/shared/product/product-price";
 import { Card, CardContent } from "@/components/ui/card";
 import { getProductBySlug } from "@/lib/actions/product.actions";
 import ProductImages from "@/components/shared/product/product-images";
-import AddToCart from "@/components/shared/product/add-to-cart";
+import CartButton from "@/components/shared/product/cart-button";
 
 type ProductDetailsPageProps = {
   params: Promise<{
@@ -29,8 +29,9 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
         <div className="md:col-span-2">
           <ProductImages images={product.images} />
         </div>
+
         {/* Details Column */}
-        <div className="md:col-span-2 p-5">
+        <div className="p-5 md:col-span-2">
           <div className="flex flex-col gap-6">
             <p className="text-sm text-muted-foreground">
               {product.brand} {product.category}
@@ -80,7 +81,7 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
 
               {product.stock > 0 && (
                 <div className="flex">
-                  <AddToCart
+                  <CartButton
                     item={{
                       productId: product.id,
                       name: product.name,

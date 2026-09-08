@@ -7,7 +7,7 @@ import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 
-import { signInFormSchema, signUpFormSchema } from "../validator";
+import { signInFormSchema, signUpFormSchema } from "../validators";
 
 export async function signInWithCredentials(
   _prevState: unknown,
