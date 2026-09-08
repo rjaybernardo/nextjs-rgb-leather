@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
+import { convertToPlainObject } from "@/lib/utils";
 
 type CreateOrderResult =
   | {
@@ -120,4 +121,24 @@ export async function createOrder(): Promise<CreateOrderResult> {
       message: formatError(error),
     };
   }
+}
+
+// Get order by ID
+export async function getOrderById(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId,
+    },
+    include: {
+      orderitems: true,
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return convertToPlainObject(order);
 }
