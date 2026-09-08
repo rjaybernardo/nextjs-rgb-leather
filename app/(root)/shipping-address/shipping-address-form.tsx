@@ -1,10 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { ArrowRight, Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 
+import CheckoutSteps from "@/components/shared/checkout-steps";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -13,6 +16,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { updateUserAddress } from "@/lib/actions/user.actions";
 import { shippingAddressDefaultValues } from "@/lib/constants";
 import { shippingAddressSchema } from "@/lib/validators";
 import type { ShippingAddress } from "@/types";
@@ -24,17 +28,31 @@ type ShippingAddressFormProps = {
 type ShippingAddressFormValues = z.infer<typeof shippingAddressSchema>;
 
 const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<ShippingAddressFormValues>({
     resolver: zodResolver(shippingAddressSchema),
     defaultValues: address ?? shippingAddressDefaultValues,
   });
 
-  const onSubmit = () => {
-    // The submit action will be implemented in the next lesson.
+  const onSubmit: SubmitHandler<ShippingAddressFormValues> = (values) => {
+    startTransition(async () => {
+      const result = await updateUserAddress(values);
+
+      if (!result.success) {
+        console.error(result.message);
+        return;
+      }
+
+      router.push("/payment-method");
+    });
   };
 
   return (
     <div className="mx-auto max-w-md space-y-4">
+      <CheckoutSteps current={1} />
+
       <h1 className="h2-bold mt-4">Shipping Address</h1>
 
       <p className="text-sm text-muted-foreground">
@@ -60,6 +78,7 @@ const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
                   aria-invalid={fieldState.invalid}
                   placeholder="Enter full name"
                   autoComplete="name"
+                  disabled={isPending}
                 />
 
                 {fieldState.invalid && (
@@ -82,6 +101,7 @@ const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
                   aria-invalid={fieldState.invalid}
                   placeholder="Enter address"
                   autoComplete="street-address"
+                  disabled={isPending}
                 />
 
                 {fieldState.invalid && (
@@ -105,6 +125,7 @@ const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter city"
                     autoComplete="address-level2"
+                    disabled={isPending}
                   />
 
                   {fieldState.invalid && (
@@ -127,6 +148,7 @@ const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter country"
                     autoComplete="country-name"
+                    disabled={isPending}
                   />
 
                   {fieldState.invalid && (
@@ -149,6 +171,7 @@ const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter postal code"
                     autoComplete="postal-code"
+                    disabled={isPending}
                   />
 
                   {fieldState.invalid && (
@@ -161,8 +184,12 @@ const ShippingAddressForm = ({ address }: ShippingAddressFormProps) => {
         </FieldGroup>
 
         <div className="flex gap-2">
-          <Button type="submit">
-            <ArrowRight className="h-4 w-4" />
+          <Button type="submit" disabled={isPending}>
+            {isPending ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )}
             Continue
           </Button>
         </div>
