@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Loader, Minus, Plus } from "lucide-react";
+import { ArrowRight, Loader, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { addItemToCart, removeItemFromCart } from "@/lib/actions/cart.actions";
+import { formatCurrency } from "@/lib/utils";
 import type { Cart } from "@/types";
 
 type CartTableProps = {
@@ -22,6 +25,7 @@ type CartTableProps = {
 };
 
 const CartTable = ({ cart }: CartTableProps) => {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleRemove = (productId: string) => {
@@ -41,6 +45,12 @@ const CartTable = ({ cart }: CartTableProps) => {
       if (!res.success) {
         console.error(res.message);
       }
+    });
+  };
+
+  const handleCheckout = () => {
+    startTransition(() => {
+      router.push("/shipping-address");
     });
   };
 
@@ -88,9 +98,9 @@ const CartTable = ({ cart }: CartTableProps) => {
                     <TableCell>
                       <div className="flex-center gap-2">
                         <Button
-                          disabled={isPending}
-                          variant="outline"
                           type="button"
+                          variant="outline"
+                          disabled={isPending}
                           onClick={() => handleRemove(item.productId)}
                           aria-label={`Remove one ${item.name}`}
                         >
@@ -104,9 +114,9 @@ const CartTable = ({ cart }: CartTableProps) => {
                         <span>{item.qty}</span>
 
                         <Button
-                          disabled={isPending}
-                          variant="outline"
                           type="button"
+                          variant="outline"
+                          disabled={isPending}
                           onClick={() => handleAdd(item)}
                           aria-label={`Add one ${item.name}`}
                         >
@@ -119,12 +129,41 @@ const CartTable = ({ cart }: CartTableProps) => {
                       </div>
                     </TableCell>
 
-                    <TableCell className="text-right">${item.price}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(item.price)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
+
+          <Card>
+            <CardContent className="gap-4 p-4">
+              <div className="pb-3 text-xl">
+                Subtotal (
+                {cart.items.reduce((total, item) => total + item.qty, 0)}):
+                <span className="font-bold">
+                  {" "}
+                  {formatCurrency(cart.itemsPrice)}
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleCheckout}
+                className="w-full"
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
+                Proceed to Checkout
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
     </>
