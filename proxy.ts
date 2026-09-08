@@ -21,13 +21,5 @@ export const proxy = auth((request) => {
 });
 
 export const config = {
-  matcher: [
-    /*
-     * Run Proxy on application pages, but skip:
-     * - API routes
-     * - Next.js internals
-     * - static files
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

@@ -1,5 +1,16 @@
 import type { NextAuthConfig } from "next-auth";
 
+const protectedPaths = [
+  /^\/shipping-address$/,
+  /^\/payment-method$/,
+  /^\/place-order$/,
+  /^\/profile$/,
+  /^\/user(?:\/.*)?$/,
+  /^\/order(?:\/.*)?$/,
+  /^\/account(?:\/.*)?$/,
+  /^\/admin(?:\/.*)?$/,
+];
+
 export const authConfig = {
   pages: {
     signIn: "/sign-in",
@@ -8,11 +19,12 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnProtectedRoute =
-        nextUrl.pathname.startsWith("/account") ||
-        nextUrl.pathname.startsWith("/admin");
 
-      if (isOnProtectedRoute) {
+      const isProtectedRoute = protectedPaths.some((pattern) =>
+        pattern.test(nextUrl.pathname),
+      );
+
+      if (isProtectedRoute) {
         return isLoggedIn;
       }
 
