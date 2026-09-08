@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
-import { convertToPlainObject } from "@/lib/utils";
 
 type CreateOrderResult =
   | {
@@ -140,5 +139,19 @@ export async function getOrderById(orderId: string) {
     },
   });
 
-  return convertToPlainObject(order);
+  if (!order) {
+    return undefined;
+  }
+
+  return {
+    ...order,
+    itemsPrice: Number(order.itemsPrice),
+    shippingPrice: Number(order.shippingPrice),
+    taxPrice: Number(order.taxPrice),
+    totalPrice: Number(order.totalPrice),
+    orderitems: order.orderitems.map((item) => ({
+      ...item,
+      price: Number(item.price),
+    })),
+  };
 }
