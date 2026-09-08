@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Loader, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -55,7 +55,7 @@ const AddToCart = ({ cart, item }: AddToCartProps) => {
           disabled={isPending}
           aria-label={`Decrease quantity of ${item.name}`}
         >
-          <Minus />
+          {isPending ? <Loader className="animate-spin" /> : <Minus />}
         </Button>
 
         <span className="min-w-8 text-center font-medium" aria-live="polite">
@@ -70,7 +70,7 @@ const AddToCart = ({ cart, item }: AddToCartProps) => {
           disabled={isPending}
           aria-label={`Increase quantity of ${item.name}`}
         >
-          <Plus />
+          {isPending ? <Loader className="animate-spin" /> : <Plus />}
         </Button>
       </div>
     );
@@ -83,7 +83,7 @@ const AddToCart = ({ cart, item }: AddToCartProps) => {
       onClick={handleAddToCart}
       disabled={isPending}
     >
-      <Plus />
+      {isPending ? <Loader className="animate-spin" /> : <Plus />}
       Add to cart
     </Button>
   );
