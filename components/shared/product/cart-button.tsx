@@ -1,9 +1,9 @@
-import { getMyCart } from "@/lib/actions/cart.actions";
 import AddToCart from "@/components/shared/product/add-to-cart";
+import { getMyCart } from "@/lib/actions/cart.actions";
 import type { CartItem } from "@/types";
 
 type CartButtonProps = {
-  item: CartItem;
+  item: Omit<CartItem, "cartId">;
 };
 
 const CartButton = async ({ item }: CartButtonProps) => {

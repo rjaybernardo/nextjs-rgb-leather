@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,80 +10,79 @@ import type { Cart, CartItem } from "@/types";
 
 type AddToCartProps = {
   cart?: Cart;
-  item: CartItem;
+  item: Omit<CartItem, "cartId">;
 };
 
 const AddToCart = ({ cart, item }: AddToCartProps) => {
-  const handleAddToCart = async () => {
-    const res = await addItemToCart(item);
-
-    if (!res.success) {
-      toast.add({
-        title: "Unable to add item",
-        description: res.message,
-        type: "error",
-      });
-
-      return;
-    }
-
-    toast.add({
-      title: "Added to cart",
-      description: `${item.name} added to the cart`,
-      type: "success",
-    });
-  };
-
-  const handleRemoveFromCart = async () => {
-    const res = await removeItemFromCart(item.productId);
-
-    if (!res.success) {
-      toast.add({
-        title: "Unable to remove item",
-        description: res.message,
-        type: "error",
-      });
-
-      return;
-    }
-
-    toast.add({
-      title: "Cart updated",
-      description: res.message,
-      type: "success",
-    });
-  };
+  const [isPending, startTransition] = useTransition();
 
   const existItem = cart?.items.find(
     (cartItem) => cartItem.productId === item.productId,
   );
 
-  return existItem ? (
-    <div className="flex items-center">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={handleRemoveFromCart}
-        aria-label={`Remove one ${item.name} from cart`}
-      >
-        <Minus />
-      </Button>
+  const handleAddToCart = () => {
+    startTransition(async () => {
+      const res = await addItemToCart(item);
 
-      <span className="min-w-10 px-2 text-center">{existItem.qty}</span>
+      toast.add({
+        title: res.success ? "Added to cart" : "Unable to add item",
+        description: res.message,
+        type: res.success ? "success" : "error",
+      });
+    });
+  };
 
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={handleAddToCart}
-        aria-label={`Add one more ${item.name} to cart`}
-      >
-        <Plus />
-      </Button>
-    </div>
-  ) : (
-    <Button className="w-full" type="button" onClick={handleAddToCart}>
+  const handleRemoveFromCart = () => {
+    startTransition(async () => {
+      const res = await removeItemFromCart(item.productId);
+
+      toast.add({
+        title: res.success ? "Cart updated" : "Unable to update cart",
+        description: res.message,
+        type: res.success ? "success" : "error",
+      });
+    });
+  };
+
+  if (existItem) {
+    return (
+      <div className="flex w-full items-center justify-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={handleRemoveFromCart}
+          disabled={isPending}
+          aria-label={`Decrease quantity of ${item.name}`}
+        >
+          <Minus />
+        </Button>
+
+        <span className="min-w-8 text-center font-medium" aria-live="polite">
+          {existItem.qty}
+        </span>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={handleAddToCart}
+          disabled={isPending}
+          aria-label={`Increase quantity of ${item.name}`}
+        >
+          <Plus />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      className="w-full"
+      type="button"
+      onClick={handleAddToCart}
+      disabled={isPending}
+    >
       <Plus />
       Add to cart
     </Button>

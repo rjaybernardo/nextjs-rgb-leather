@@ -34,24 +34,21 @@ const calcPrice = (items: CartItem[]) => {
 // Add item to cart
 export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
   try {
-    // Check for session cart cookie
+    // Get session cart ID
     const sessionCartId = (await cookies()).get("sessionCartId")?.value;
 
     if (!sessionCartId) {
       throw new Error("Cart session not found");
     }
 
-    // Get session and user ID
+    // Get current user
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Get cart from database
-    const cart = await getMyCart();
-
-    // Parse and validate submitted item data
+    // Validate submitted item
     const item = cartItemSchema.parse(data);
 
-    // Find product in database
+    // Find product
     const product = await prisma.product.findUnique({
       where: {
         id: item.productId,
@@ -62,17 +59,56 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       throw new Error("Product not found");
     }
 
-    console.log({
-      sessionCartId,
-      userId,
-      itemRequested: item,
-      productFound: product,
-      cart,
-    });
+    // Get existing cart
+    const cart = await getMyCart();
+
+    // If cart exists, update it
+    if (cart) {
+      const existItem = cart.items.find(
+        (cartItem) => cartItem.productId === item.productId,
+      );
+
+      if (existItem) {
+        // Increase quantity of existing item
+        existItem.qty += item.qty;
+      } else {
+        // Add new item
+        cart.items.push(item);
+      }
+
+      // Recalculate prices
+      const prices = calcPrice(cart.items);
+
+      // Update cart
+      await prisma.cart.update({
+        where: {
+          id: cart.id,
+        },
+        data: {
+          items: cart.items,
+          ...prices,
+        },
+      });
+    } else {
+      // Create a new cart
+      const prices = calcPrice([item]);
+
+      await prisma.cart.create({
+        data: {
+          sessionCartId,
+          userId,
+          items: [item],
+          ...prices,
+        },
+      });
+    }
+
+    // Revalidate product page
+    revalidatePath(`/product/${product.slug}`);
 
     return {
       success: true,
-      message: "Testing cart",
+      message: `${product.name} added to cart successfully`,
     };
   } catch (error) {
     return {
@@ -85,7 +121,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
 // Remove one quantity of an item from the cart
 export async function removeItemFromCart(productId: string) {
   try {
-    // Get session cart id
+    // Get session cart ID
     const sessionCartId = (await cookies()).get("sessionCartId")?.value;
 
     if (!sessionCartId) {
@@ -121,7 +157,7 @@ export async function removeItemFromCart(productId: string) {
     if (exist.qty === 1) {
       cart.items = cart.items.filter((item) => item.productId !== productId);
     } else {
-      // Otherwise decrease the quantity by one
+      // Otherwise decrease quantity by one
       exist.qty -= 1;
     }
 
