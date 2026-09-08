@@ -20,6 +20,8 @@ import { getUserById } from "@/lib/actions/user.actions";
 import { formatCurrency } from "@/lib/utils";
 import type { ShippingAddress } from "@/types";
 
+import PlaceOrderForm from "./place-order-form";
+
 export const metadata: Metadata = {
   title: "Place Order",
 };
@@ -32,8 +34,7 @@ const PlaceOrderPage = async () => {
     redirect("/sign-in");
   }
 
-  const cart = await getMyCart();
-  const user = await getUserById(userId);
+  const [cart, user] = await Promise.all([getMyCart(), getUserById(userId)]);
 
   if (!cart || cart.items.length === 0) {
     redirect("/cart");
@@ -53,49 +54,44 @@ const PlaceOrderPage = async () => {
     <>
       <CheckoutSteps current={3} />
 
-      <h1 className="py-4 text-2xl font-bold">Place Order</h1>
+      <h1 className="py-4 text-2xl">Place Order</h1>
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid md:grid-cols-3 md:gap-5">
         <div className="space-y-4 overflow-x-auto md:col-span-2">
-          {/* Shipping Address */}
           <Card>
-            <CardContent className="gap-4 p-4">
-              <h2 className="pb-4 text-xl font-semibold">Shipping Address</h2>
+            <CardContent className="space-y-4 p-4">
+              <h2 className="text-xl">Shipping Address</h2>
 
-              <p>{userAddress.fullName}</p>
+              <div className="space-y-1">
+                <p>{userAddress.fullName}</p>
 
-              <p>
-                {userAddress.streetAddress}, {userAddress.city},{" "}
-                {userAddress.postalCode}, {userAddress.country}
-              </p>
-
-              <div className="mt-3">
-                <Link href="/shipping-address">
-                  <Button variant="outline">Edit</Button>
-                </Link>
+                <p>
+                  {userAddress.streetAddress}, {userAddress.city},{" "}
+                  {userAddress.postalCode}, {userAddress.country}
+                </p>
               </div>
+
+              <Link href="/shipping-address">
+                <Button variant="outline">Edit</Button>
+              </Link>
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
           <Card>
-            <CardContent className="gap-4 p-4">
-              <h2 className="pb-4 text-xl font-semibold">Payment Method</h2>
+            <CardContent className="space-y-4 p-4">
+              <h2 className="text-xl">Payment Method</h2>
 
               <p>{user.paymentMethod}</p>
 
-              <div className="mt-3">
-                <Link href="/payment-method">
-                  <Button variant="outline">Edit</Button>
-                </Link>
-              </div>
+              <Link href="/payment-method">
+                <Button variant="outline">Edit</Button>
+              </Link>
             </CardContent>
           </Card>
 
-          {/* Order Items */}
           <Card>
-            <CardContent className="gap-4 p-4">
-              <h2 className="pb-4 text-xl font-semibold">Order Items</h2>
+            <CardContent className="space-y-4 p-4">
+              <h2 className="text-xl">Order Items</h2>
 
               <Table>
                 <TableHeader>
@@ -119,7 +115,7 @@ const PlaceOrderPage = async () => {
                             alt={item.name}
                             width={50}
                             height={50}
-                            className="rounded-md object-cover"
+                            className="rounded"
                           />
 
                           <span className="px-2">{item.name}</span>
@@ -138,16 +134,13 @@ const PlaceOrderPage = async () => {
                 </TableBody>
               </Table>
 
-              <div className="mt-3">
-                <Link href="/cart">
-                  <Button variant="outline">Edit</Button>
-                </Link>
-              </div>
+              <Link href="/cart">
+                <Button variant="outline">Edit</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
 
-        {/* Order Summary */}
         <div>
           <Card>
             <CardContent className="space-y-4 p-4">
@@ -171,7 +164,7 @@ const PlaceOrderPage = async () => {
                 <span>{formatCurrency(cart.totalPrice)}</span>
               </div>
 
-              {/* Place Order button will be added in a later lesson */}
+              <PlaceOrderForm />
             </CardContent>
           </Card>
         </div>

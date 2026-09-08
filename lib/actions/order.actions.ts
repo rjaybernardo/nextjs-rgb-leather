@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
 import { prisma } from "@/lib/prisma";
-import { formatError } from "@/lib/utils";
+import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
 
@@ -64,10 +64,10 @@ export async function createOrder(): Promise<CreateOrderResult> {
       userId: user.id,
       shippingAddress: user.address,
       paymentMethod: user.paymentMethod,
-      itemsPrice: cart.itemsPrice,
-      shippingPrice: cart.shippingPrice,
-      taxPrice: cart.taxPrice,
-      totalPrice: cart.totalPrice,
+      itemsPrice: String(cart.itemsPrice),
+      shippingPrice: String(cart.shippingPrice),
+      taxPrice: String(cart.taxPrice),
+      totalPrice: String(cart.totalPrice),
     });
 
     const insertedOrderId = await prisma.$transaction(async (tx) => {
