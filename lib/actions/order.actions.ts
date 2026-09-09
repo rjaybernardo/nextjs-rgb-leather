@@ -260,6 +260,108 @@ export async function deleteOrder(id: string) {
   }
 }
 
+// Update Order To Paid
+async function updateOrderToPaid({ orderId }: { orderId: string }) {
+  const order = await prisma.order.findUnique({
+    where: {
+      id: orderId,
+    },
+  });
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
+  if (order.isPaid) {
+    return;
+  }
+
+  await prisma.order.update({
+    where: {
+      id: orderId,
+    },
+    data: {
+      isPaid: true,
+      paidAt: new Date(),
+    },
+  });
+}
+
+// Update Order To Paid By COD
+export async function updateOrderToPaidByCOD(orderId: string) {
+  try {
+    await requireAdmin();
+
+    await updateOrderToPaid({
+      orderId,
+    });
+
+    revalidatePath(`/order/${orderId}`);
+    revalidatePath("/admin/orders");
+
+    return {
+      success: true,
+      message: "Order paid successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+// Update Order To Delivered
+export async function deliverOrder(orderId: string) {
+  try {
+    await requireAdmin();
+
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    if (!order.isPaid) {
+      throw new Error("Order is not paid");
+    }
+
+    if (order.isDelivered) {
+      return {
+        success: true,
+        message: "Order is already delivered",
+      };
+    }
+
+    await prisma.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        isDelivered: true,
+        deliveredAt: new Date(),
+      },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+    revalidatePath("/admin/orders");
+
+    return {
+      success: true,
+      message: "Order delivered successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
 type SalesDataType = {
   month: string;
   totalSales: number;
