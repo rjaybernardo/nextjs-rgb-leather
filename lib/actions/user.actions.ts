@@ -19,9 +19,7 @@ import {
 const persistGuestCart = async (userId: string) => {
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
 
-  if (!sessionCartId) {
-    return;
-  }
+  if (!sessionCartId) return;
 
   const sessionCart = await prisma.cart.findFirst({
     where: {
@@ -29,9 +27,7 @@ const persistGuestCart = async (userId: string) => {
     },
   });
 
-  if (!sessionCart) {
-    return;
-  }
+  if (!sessionCart) return;
 
   await prisma.cart.deleteMany({
     where: {
@@ -86,12 +82,19 @@ export async function signInWithCredentials(
     const callbackUrlValue = formData.get("callbackUrl");
 
     const callbackUrl =
-      typeof callbackUrlValue === "string" && callbackUrlValue
+      typeof callbackUrlValue === "string" && callbackUrlValue.length > 0
         ? callbackUrlValue
         : "/";
 
+    /*
+     * Auth.js redirects after a successful sign-in.
+     *
+     * Do not catch/rewrite the redirect exception. It needs to
+     * propagate through Next.js so the browser is redirected.
+     */
     await signIn("credentials", {
-      ...user,
+      email: user.email,
+      password: user.password,
       redirectTo: callbackUrl,
     });
 
@@ -131,6 +134,19 @@ export async function signUp(_prevState: unknown, formData: FormData) {
       confirmPassword: formData.get("confirmPassword"),
     });
 
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: user.email,
+      },
+    });
+
+    if (existingUser) {
+      return {
+        success: false,
+        message: "User already exists with this email address",
+      };
+    }
+
     const hashedPassword = hashSync(user.password, 10);
 
     const createdUser = await prisma.user.create({
@@ -152,15 +168,13 @@ export async function signUp(_prevState: unknown, formData: FormData) {
   const callbackUrlValue = formData.get("callbackUrl");
 
   const callbackUrl =
-    typeof callbackUrlValue === "string" && callbackUrlValue
+    typeof callbackUrlValue === "string" && callbackUrlValue.length > 0
       ? callbackUrlValue
       : "/";
 
   /*
-   * Do not wrap signIn() in the database error handler above.
-   *
-   * Auth.js uses a redirect when authentication succeeds.
-   * That redirect must be allowed to propagate through Next.js.
+   * Auth.js uses a redirect after successful authentication.
+   * Let that redirect propagate through Next.js.
    */
   await signIn("credentials", {
     email: user.email,
