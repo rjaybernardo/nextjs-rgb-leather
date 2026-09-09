@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 
 type SalesData = {
   month: string;
@@ -15,8 +15,8 @@ type ChartsProps = {
 
 export default function Charts({ data: { salesData } }: ChartsProps) {
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={salesData}>
+    <div className="h-[350px] w-full">
+      <BarChart data={salesData} responsive className="h-full w-full">
         <XAxis
           dataKey="month"
           fontSize={12}
@@ -38,6 +38,6 @@ export default function Charts({ data: { salesData } }: ChartsProps) {
           className="fill-primary"
         />
       </BarChart>
-    </ResponsiveContainer>
+    </div>
   );
 }
