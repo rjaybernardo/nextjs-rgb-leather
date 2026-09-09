@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BadgeDollarSign, Barcode, CreditCard, Users } from "lucide-react";
 
-import { auth } from "@/auth";
+import { requireAdmin } from "@/lib/auth-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -21,12 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminOverviewPage() {
-  const session = await auth();
-
-  // Allow only administrators to access the dashboard.
-  if (session?.user.role !== "admin") {
-    redirect("/");
-  }
+  await requireAdmin();
 
   const summary = await getOrderSummary();
 
