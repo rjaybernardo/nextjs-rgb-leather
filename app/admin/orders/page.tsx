@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireAdmin } from "@/lib/auth-guard";
-import { getAllOrders } from "@/lib/actions/order.actions";
+import { deleteOrder, getAllOrders } from "@/lib/actions/order.actions";
+import DeleteDialog from "@/components/shared/delete-dialog";
 import Pagination from "@/components/shared/pagination";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,9 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { buttonVariants } from "@/components/ui/button";
-import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatId, cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Admin Orders",
@@ -84,17 +84,21 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   </TableCell>
 
                   <TableCell>
-                    <Link
-                      href={`/order/${order.id}`}
-                      className={cn(
-                        buttonVariants({
-                          variant: "outline",
-                          size: "sm",
-                        }),
-                      )}
-                    >
-                      Details
-                    </Link>
+                    <div className="flex gap-1">
+                      <Link
+                        href={`/order/${order.id}`}
+                        className={cn(
+                          buttonVariants({
+                            variant: "outline",
+                            size: "sm",
+                          }),
+                        )}
+                      >
+                        Details
+                      </Link>
+
+                      <DeleteDialog id={order.id} action={deleteOrder} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

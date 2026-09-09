@@ -1,8 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { auth } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
+import { requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
@@ -232,6 +235,31 @@ export async function getAllOrders({
   };
 }
 
+// Delete Order
+export async function deleteOrder(id: string) {
+  try {
+    await requireAdmin();
+
+    await prisma.order.delete({
+      where: {
+        id,
+      },
+    });
+
+    revalidatePath("/admin/orders");
+
+    return {
+      success: true,
+      message: "Order deleted successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
 type SalesDataType = {
   month: string;
   totalSales: number;
@@ -239,12 +267,10 @@ type SalesDataType = {
 
 // Get sales data and order summary
 export async function getOrderSummary() {
-  // Get counts for each resource
   const ordersCount = await prisma.order.count();
   const productsCount = await prisma.product.count();
   const usersCount = await prisma.user.count();
 
-  // Calculate total sales
   const totalSalesResult = await prisma.order.aggregate({
     _sum: {
       totalPrice: true,
@@ -253,7 +279,6 @@ export async function getOrderSummary() {
 
   const totalSales = Number(totalSalesResult._sum.totalPrice ?? 0);
 
-  // Get monthly sales
   const salesDataRaw = await prisma.$queryRaw<
     Array<{
       month: string;
@@ -273,7 +298,6 @@ export async function getOrderSummary() {
     totalSales: Number(entry.totalSales),
   }));
 
-  // Get latest orders
   const latestOrders = await prisma.order.findMany({
     orderBy: {
       createdAt: "desc",
