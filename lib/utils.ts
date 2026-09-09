@@ -49,6 +49,13 @@ export function formatCurrency(amount: number | string | null): string {
   return "NaN";
 }
 
+// Format number with thousands separators
+const NUMBER_FORMATTER = new Intl.NumberFormat("en-US");
+
+export function formatNumber(number: number): string {
+  return NUMBER_FORMATTER.format(number);
+}
+
 // Shorten ID
 export function formatId(id: string): string {
   return `..${id.substring(id.length - 6)}`;
