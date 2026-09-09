@@ -1,7 +1,12 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -11,14 +16,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  deliverOrder,
+  updateOrderToPaidByCOD,
+} from "@/lib/actions/order.actions";
+import { toast } from "@/components/ui/toast";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import type { Order, ShippingAddress } from "@/types";
 
 type OrderDetailsTableProps = {
   order: Order;
+  isAdmin: boolean;
 };
 
-const OrderDetailsTable = ({ order }: OrderDetailsTableProps) => {
+const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
+  const router = useRouter();
+
+  const [isPaidPending, startPaidTransition] = useTransition();
+
+  const [isDeliveredPending, startDeliveredTransition] = useTransition();
+
   const {
     shippingAddress,
     orderitems,
@@ -34,6 +51,42 @@ const OrderDetailsTable = ({ order }: OrderDetailsTableProps) => {
   } = order;
 
   const address = shippingAddress as ShippingAddress;
+
+  const isCashOnDelivery = paymentMethod === "CashOnDelivery";
+
+  const canMarkAsPaid = isAdmin && isCashOnDelivery && !isPaid;
+
+  const canMarkAsDelivered = isAdmin && isPaid && !isDelivered;
+
+  function handleMarkAsPaid() {
+    startPaidTransition(async () => {
+      const result = await updateOrderToPaidByCOD(order.id);
+
+      toast.add({
+        type: result.success ? "success" : "error",
+        description: result.message,
+      });
+
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
+
+  function handleMarkAsDelivered() {
+    startDeliveredTransition(async () => {
+      const result = await deliverOrder(order.id);
+
+      toast.add({
+        type: result.success ? "success" : "error",
+        description: result.message,
+      });
+
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
 
   return (
     <>
@@ -53,6 +106,18 @@ const OrderDetailsTable = ({ order }: OrderDetailsTableProps) => {
                 </Badge>
               ) : (
                 <Badge variant="destructive">Not paid</Badge>
+              )}
+
+              {canMarkAsPaid && (
+                <div>
+                  <Button
+                    type="button"
+                    disabled={isPaidPending}
+                    onClick={handleMarkAsPaid}
+                  >
+                    {isPaidPending ? "Processing..." : "Mark As Paid"}
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -75,6 +140,18 @@ const OrderDetailsTable = ({ order }: OrderDetailsTableProps) => {
               ) : (
                 <Badge variant="destructive">Not delivered</Badge>
               )}
+
+              {canMarkAsDelivered && (
+                <div>
+                  <Button
+                    type="button"
+                    disabled={isDeliveredPending}
+                    onClick={handleMarkAsDelivered}
+                  >
+                    {isDeliveredPending ? "Processing..." : "Mark As Delivered"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -93,7 +170,7 @@ const OrderDetailsTable = ({ order }: OrderDetailsTableProps) => {
 
                 <TableBody>
                   {orderitems.map((item) => (
-                    <TableRow key={item.productId}>
+                    <TableRow key={`${item.productId}-${item.slug}`}>
                       <TableCell>
                         <Link
                           href={`/product/${item.slug}`}
