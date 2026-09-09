@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,15 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { updateProfile } from "@/lib/actions/user.actions";
 import { updateProfileSchema } from "@/lib/validators";
 
-const ProfileForm = () => {
-  const { data: session } = useSession();
+type ProfileFormValues = z.infer<typeof updateProfileSchema>;
 
-  const form = useForm<z.infer<typeof updateProfileSchema>>({
+const ProfileForm = () => {
+  const { data: session, update } = useSession();
+
+  const form = useForm<ProfileFormValues>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
       name: session?.user?.name ?? "",
@@ -26,10 +30,22 @@ const ProfileForm = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof updateProfileSchema>) => {
-    // Profile update will be connected in a later lesson.
-    console.log(values);
-  };
+  async function onSubmit(values: ProfileFormValues) {
+    const res = await updateProfile(values);
+
+    if (!res.success) {
+      toast.error(res.message);
+      return;
+    }
+
+    await update({
+      user: {
+        name: values.name,
+      },
+    });
+
+    toast.success(res.message);
+  }
 
   return (
     <form
