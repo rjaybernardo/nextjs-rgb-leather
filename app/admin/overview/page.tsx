@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeDollarSign, Barcode, CreditCard, Users } from "lucide-react";
 
+import Charts from "./charts";
+
 import { requireAdmin } from "@/lib/auth-guard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -89,16 +91,18 @@ export default async function AdminOverviewPage() {
 
       {/* Dashboard content */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Overview chart placeholder */}
+        {/* Overview chart */}
         <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>Overview</CardTitle>
           </CardHeader>
 
           <CardContent className="pl-2">
-            <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">
-              Chart will be added in the next lesson.
-            </div>
+            <Charts
+              data={{
+                salesData: summary.salesData,
+              }}
+            />
           </CardContent>
         </Card>
 
