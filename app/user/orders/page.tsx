@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import Pagination from "@/components/shared/pagination";
 import {
   Table,
   TableBody,
@@ -25,8 +26,10 @@ type OrdersPageProps = {
 const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
   const { page } = await searchParams;
 
+  const currentPage = Number(page) || 1;
+
   const orders = await getMyOrders({
-    page: Number(page) || 1,
+    page: currentPage,
   });
 
   return (
@@ -84,6 +87,10 @@ const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
           </TableBody>
         </Table>
       </div>
+
+      {orders.totalPages > 1 && (
+        <Pagination page={currentPage} totalPages={orders.totalPages} />
+      )}
     </div>
   );
 };
