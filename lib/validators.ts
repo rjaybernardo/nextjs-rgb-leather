@@ -20,6 +20,9 @@ export const insertProductSchema = z.object({
     .number()
     .int("Stock must be a whole number")
     .nonnegative("Stock cannot be negative"),
+  images: z
+    .array(z.string().min(1, "Image URL is required"))
+    .min(1, "Product must have at least one image"),
   price: currency,
 });
 

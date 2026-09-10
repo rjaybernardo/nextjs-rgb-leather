@@ -103,10 +103,7 @@ export async function createProduct(data: z.input<typeof insertProductSchema>) {
     const product = insertProductSchema.parse(data);
 
     await prisma.product.create({
-      data: {
-        ...product,
-        images: [],
-      },
+      data: product,
     });
 
     revalidatePath("/admin/products");

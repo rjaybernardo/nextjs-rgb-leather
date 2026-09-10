@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import slugify from "slugify";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +16,10 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 import { createProduct } from "@/lib/actions/product.actions";
 import { productDefaultValues } from "@/lib/constants";
+import { UploadButton } from "@/lib/uploadthing";
 
 type ProductFormProps = {
   type: "Create" | "Update";
@@ -44,13 +47,27 @@ export default function ProductForm({ type }: ProductFormProps) {
     handleSubmit,
     getValues,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     defaultValues: {
       ...productDefaultValues,
       price: String(productDefaultValues.price),
       stock: Number(productDefaultValues.stock),
+      images: [],
     },
+  });
+
+  const images = useWatch({
+    control,
+    name: "images",
+    defaultValue: [],
+  });
+
+  // Register images as a virtual React Hook Form field.
+  register("images", {
+    validate: (value) =>
+      value.length > 0 || "Product must have at least one image",
   });
 
   const onSubmit = async (data: ProductFormValues) => {
@@ -64,6 +81,7 @@ export default function ProductForm({ type }: ProductFormProps) {
         brand: data.brand,
         description: data.description,
         stock: data.stock,
+        images: data.images,
         price: data.price,
       });
 
@@ -71,6 +89,11 @@ export default function ProductForm({ type }: ProductFormProps) {
         setError(result.message);
         return;
       }
+
+      toast.add({
+        type: "success",
+        description: result.message,
+      });
 
       router.push("/admin/products");
     }
@@ -82,6 +105,37 @@ export default function ProductForm({ type }: ProductFormProps) {
     setValue("slug", slugify(name, { lower: true }), {
       shouldDirty: true,
       shouldValidate: true,
+    });
+  };
+
+  const handleUploadComplete = (
+    uploadedFiles: Array<{
+      ufsUrl: string;
+    }>,
+  ) => {
+    const uploadedImages = uploadedFiles
+      .map((file) => file.ufsUrl)
+      .filter((url): url is string => Boolean(url));
+
+    if (uploadedImages.length === 0) {
+      toast.add({
+        type: "error",
+        description: "Image upload completed without a valid file URL.",
+      });
+
+      return;
+    }
+
+    setValue("images", [...images, ...uploadedImages], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleUploadError = (uploadError: Error) => {
+    toast.add({
+      type: "error",
+      description: `Image upload failed: ${uploadError.message}`,
     });
   };
 
@@ -194,6 +248,44 @@ export default function ProductForm({ type }: ProductFormProps) {
                 <FieldError errors={[errors.stock]} />
               </Field>
             </div>
+
+            {/* Images */}
+            <Field data-invalid={!!errors.images}>
+              <FieldLabel>Images</FieldLabel>
+
+              <Card>
+                <CardContent className="mt-2 min-h-48 space-y-4">
+                  {images.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {images.map((image, index) => (
+                        <div
+                          key={`${image}-${index}`}
+                          className="relative h-20 w-20 overflow-hidden rounded-sm border"
+                        >
+                          <Image
+                            src={image}
+                            alt={`Product image ${index + 1}`}
+                            fill
+                            sizes="80px"
+                            className="object-cover object-center"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="upload-field">
+                    <UploadButton
+                      endpoint="imageUploader"
+                      onClientUploadComplete={handleUploadComplete}
+                      onUploadError={handleUploadError}
+                    />
+                  </div>
+
+                  <FieldError errors={[errors.images]} />
+                </CardContent>
+              </Card>
+            </Field>
 
             {/* Description */}
             <Field data-invalid={!!errors.description}>
