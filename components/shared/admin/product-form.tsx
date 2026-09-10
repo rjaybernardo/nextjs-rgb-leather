@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import slugify from "slugify";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,160 +15,131 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createProduct, updateProduct } from "@/lib/actions/product.actions";
+import { createProduct } from "@/lib/actions/product.actions";
 import { productDefaultValues } from "@/lib/constants";
-import { insertProductSchema, updateProductSchema } from "@/lib/validators";
-import { Product } from "@/types";
-
-type ProductFormValues = z.input<typeof insertProductSchema>;
+import { insertProductSchema } from "@/lib/validators";
 
 type ProductFormProps = {
   type: "Create" | "Update";
-  product?: Product;
-  productId?: string;
 };
 
-function createSlug(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-}
+type ProductFormValues = {
+  name: string;
+  slug: string;
+  category: string;
+  brand: string;
+  description: string;
+  stock: number;
+  images: string[];
+  price: string;
+  isFeatured: boolean;
+  banner: string | null;
+};
 
-export default function ProductForm({
-  type,
-  product,
-  productId,
-}: ProductFormProps) {
-  const isUpdate = type === "Update";
+export default function ProductForm({ type }: ProductFormProps) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    reset,
+    getValues,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
-    defaultValues: product
-      ? {
-          name: product.name,
-          slug: product.slug,
-          category: product.category,
-          brand: product.brand,
-          description: product.description,
-          stock: product.stock,
-          images: product.images,
-          price: String(product.price),
-          isFeatured: product.isFeatured,
-          banner: product.banner,
-        }
-      : productDefaultValues,
+    defaultValues: {
+      ...productDefaultValues,
+      price: String(productDefaultValues.price),
+      stock: Number(productDefaultValues.stock),
+    },
   });
 
-  useEffect(() => {
-    if (product) {
-      reset({
-        name: product.name,
-        slug: product.slug,
-        category: product.category,
-        brand: product.brand,
-        description: product.description,
-        stock: product.stock,
-        images: product.images,
-        price: String(product.price),
-        isFeatured: product.isFeatured,
-        banner: product.banner,
-      });
-    }
-  }, [product, reset]);
-
   const onSubmit = async (data: ProductFormValues) => {
-    if (isUpdate) {
-      if (!productId) {
-        return;
-      }
+    setError(null);
 
-      const result = await updateProduct({
-        ...data,
-        id: productId,
-      });
+    const parsedData = insertProductSchema.safeParse({
+      ...data,
+      price: data.price,
+      stock: data.stock,
+    });
 
-      if (!result.success) {
-        console.error(result.message);
-        return;
-      }
-
-      window.location.href = "/admin/products";
+    if (!parsedData.success) {
+      setError("Please check the form fields and try again.");
       return;
     }
 
-    const result = await createProduct(data);
+    const result = await createProduct(parsedData.data);
 
     if (!result.success) {
-      console.error(result.message);
+      setError(result.message);
       return;
     }
 
-    window.location.href = "/admin/products";
+    router.push("/admin/products");
   };
 
   const generateSlug = () => {
-    const name =
-      document.querySelector<HTMLInputElement>('input[name="name"]')?.value;
+    const name = getValues("name");
 
-    if (name) {
-      setValue("slug", createSlug(name), {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-    }
+    setValue("slug", slugify(name, { lower: true }), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Product Information</CardTitle>
+          <CardTitle>
+            {type === "Create" ? "Product Information" : "Edit Product"}
+          </CardTitle>
         </CardHeader>
 
         <CardContent>
           <FieldGroup>
-            <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+            {/* Name & Slug */}
+            <div className="flex flex-col gap-5 md:flex-row">
+              <Field data-invalid={!!errors.name} className="w-full">
+                <FieldLabel htmlFor="name">Name</FieldLabel>
 
-              <Input
-                id="name"
-                placeholder="Enter product name"
-                aria-invalid={!!errors.name}
-                {...register("name")}
-              />
-
-              <FieldError errors={[errors.name]} />
-            </Field>
-
-            <Field data-invalid={!!errors.slug}>
-              <FieldLabel htmlFor="slug">Slug</FieldLabel>
-
-              <div className="flex gap-2">
                 <Input
-                  id="slug"
-                  placeholder="product-slug"
-                  aria-invalid={!!errors.slug}
-                  {...register("slug")}
+                  id="name"
+                  placeholder="Enter product name"
+                  aria-invalid={!!errors.name}
+                  {...register("name")}
                 />
 
-                <Button type="button" variant="outline" onClick={generateSlug}>
-                  Generate
-                </Button>
-              </div>
+                <FieldError errors={[errors.name]} />
+              </Field>
 
-              <FieldError errors={[errors.slug]} />
-            </Field>
+              <Field data-invalid={!!errors.slug} className="w-full">
+                <FieldLabel htmlFor="slug">Slug</FieldLabel>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <Field data-invalid={!!errors.category}>
+                <div className="flex gap-2">
+                  <Input
+                    id="slug"
+                    placeholder="Enter product slug"
+                    aria-invalid={!!errors.slug}
+                    {...register("slug")}
+                  />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generateSlug}
+                  >
+                    Generate
+                  </Button>
+                </div>
+
+                <FieldError errors={[errors.slug]} />
+              </Field>
+            </div>
+
+            {/* Category & Brand */}
+            <div className="flex flex-col gap-5 md:flex-row">
+              <Field data-invalid={!!errors.category} className="w-full">
                 <FieldLabel htmlFor="category">Category</FieldLabel>
 
                 <Input
@@ -180,12 +152,12 @@ export default function ProductForm({
                 <FieldError errors={[errors.category]} />
               </Field>
 
-              <Field data-invalid={!!errors.brand}>
+              <Field data-invalid={!!errors.brand} className="w-full">
                 <FieldLabel htmlFor="brand">Brand</FieldLabel>
 
                 <Input
                   id="brand"
-                  placeholder="Enter brand"
+                  placeholder="Enter product brand"
                   aria-invalid={!!errors.brand}
                   {...register("brand")}
                 />
@@ -194,15 +166,15 @@ export default function ProductForm({
               </Field>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <Field data-invalid={!!errors.price}>
+            {/* Price & Stock */}
+            <div className="flex flex-col gap-5 md:flex-row">
+              <Field data-invalid={!!errors.price} className="w-full">
                 <FieldLabel htmlFor="price">Price</FieldLabel>
 
                 <Input
                   id="price"
-                  type="text"
+                  placeholder="Enter product price"
                   inputMode="decimal"
-                  placeholder="0.00"
                   aria-invalid={!!errors.price}
                   {...register("price")}
                 />
@@ -210,15 +182,13 @@ export default function ProductForm({
                 <FieldError errors={[errors.price]} />
               </Field>
 
-              <Field data-invalid={!!errors.stock}>
+              <Field data-invalid={!!errors.stock} className="w-full">
                 <FieldLabel htmlFor="stock">Stock</FieldLabel>
 
                 <Input
                   id="stock"
                   type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
+                  placeholder="Enter product stock"
                   aria-invalid={!!errors.stock}
                   {...register("stock", {
                     valueAsNumber: true,
@@ -229,18 +199,29 @@ export default function ProductForm({
               </Field>
             </div>
 
+            {/* Description */}
             <Field data-invalid={!!errors.description}>
               <FieldLabel htmlFor="description">Description</FieldLabel>
 
               <Textarea
                 id="description"
                 placeholder="Enter product description"
+                className="resize-none"
                 aria-invalid={!!errors.description}
                 {...register("description")}
               />
 
               <FieldError errors={[errors.description]} />
             </Field>
+
+            {error && (
+              <div
+                role="alert"
+                className="text-sm font-normal text-destructive"
+              >
+                {error}
+              </div>
+            )}
           </FieldGroup>
         </CardContent>
       </Card>
@@ -248,7 +229,7 @@ export default function ProductForm({
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting
-            ? "Saving..."
+            ? "Creating..."
             : type === "Create"
               ? "Create Product"
               : "Update Product"}
