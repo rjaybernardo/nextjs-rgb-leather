@@ -51,7 +51,7 @@ export default function DeleteDialog({ id, action }: DeleteDialogProps) {
       } catch {
         toast.add({
           type: "error",
-          description: "Something went wrong while deleting the order.",
+          description: "Something went wrong while deleting the product.",
         });
       }
     });
@@ -86,7 +86,7 @@ export default function DeleteDialog({ id, action }: DeleteDialogProps) {
 
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the
-            order.
+            product.
           </AlertDialogDescription>
         </AlertDialogHeader>
 

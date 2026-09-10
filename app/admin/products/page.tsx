@@ -1,8 +1,9 @@
 import Link from "next/link";
 
-import { getAllProducts } from "@/lib/actions/product.actions";
-import { requireAdmin } from "@/lib/auth-guard";
+import { deleteProduct, getAllProducts } from "@/lib/actions/product.actions";
+import DeleteDialog from "@/components/shared/delete-dialog";
 import Pagination from "@/components/shared/pagination";
+import { requireAdmin } from "@/lib/auth-guard";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -40,7 +41,10 @@ const AdminProductsPage = async (props: {
       <div className="flex-between">
         <h1 className="h2-bold">Products</h1>
 
-        <Button render={<Link href="/admin/products/create" />}>
+        <Button
+          nativeButton={false}
+          render={<Link href="/admin/products/create" />}
+        >
           Create Product
         </Button>
       </div>
@@ -78,6 +82,7 @@ const AdminProductsPage = async (props: {
 
                 <TableCell className="flex gap-1">
                   <Button
+                    nativeButton={false}
                     variant="outline"
                     size="sm"
                     render={<Link href={`/admin/products/${product.id}`} />}
@@ -85,7 +90,7 @@ const AdminProductsPage = async (props: {
                     Edit
                   </Button>
 
-                  {/* DELETE WILL BE ADDED IN A LATER LESSON */}
+                  <DeleteDialog id={product.id} action={deleteProduct} />
                 </TableCell>
               </TableRow>
             ))}
