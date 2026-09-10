@@ -18,12 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/toast";
-import { createProduct } from "@/lib/actions/product.actions";
+import { createProduct, updateProduct } from "@/lib/actions/product.actions";
 import { productDefaultValues } from "@/lib/constants";
 import { UploadButton } from "@/lib/uploadthing";
+import type { Product } from "@/types";
 
 type ProductFormProps = {
   type: "Create" | "Update";
+  product?: Product;
+  productId?: string;
 };
 
 type ProductFormValues = {
@@ -39,9 +42,15 @@ type ProductFormValues = {
   banner: string | null;
 };
 
-export default function ProductForm({ type }: ProductFormProps) {
+export default function ProductForm({
+  type,
+  product,
+  productId,
+}: ProductFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+
+  const isUpdate = type === "Update";
 
   const {
     register,
@@ -51,32 +60,45 @@ export default function ProductForm({ type }: ProductFormProps) {
     control,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
-    defaultValues: {
-      ...productDefaultValues,
-      price: String(productDefaultValues.price),
-      stock: Number(productDefaultValues.stock),
-      images: [],
-      isFeatured: false,
-      banner: null,
-    },
+    defaultValues: product
+      ? {
+          name: product.name,
+          slug: product.slug,
+          category: product.category,
+          brand: product.brand,
+          description: product.description,
+          stock: Number(product.stock),
+          images: product.images,
+          price: String(product.price),
+          isFeatured: product.isFeatured,
+          banner: product.banner,
+        }
+      : {
+          ...productDefaultValues,
+          price: String(productDefaultValues.price),
+          stock: Number(productDefaultValues.stock),
+          images: [],
+          isFeatured: false,
+          banner: null,
+        },
   });
 
   const images = useWatch({
     control,
     name: "images",
-    defaultValue: [],
+    defaultValue: product?.images ?? [],
   });
 
   const isFeatured = useWatch({
     control,
     name: "isFeatured",
-    defaultValue: false,
+    defaultValue: product?.isFeatured ?? false,
   });
 
   const banner = useWatch({
     control,
     name: "banner",
-    defaultValue: null,
+    defaultValue: product?.banner ?? null,
   });
 
   register("images", {
@@ -91,8 +113,14 @@ export default function ProductForm({ type }: ProductFormProps) {
   const onSubmit = async (data: ProductFormValues) => {
     setError(null);
 
-    if (type === "Create") {
-      const result = await createProduct({
+    if (isUpdate) {
+      if (!productId) {
+        setError("Product ID is required to update a product.");
+        return;
+      }
+
+      const result = await updateProduct({
+        id: productId,
         name: data.name,
         slug: data.slug,
         category: data.category,
@@ -116,7 +144,33 @@ export default function ProductForm({ type }: ProductFormProps) {
       });
 
       router.push("/admin/products");
+      return;
     }
+
+    const result = await createProduct({
+      name: data.name,
+      slug: data.slug,
+      category: data.category,
+      brand: data.brand,
+      description: data.description,
+      stock: data.stock,
+      images: data.images,
+      isFeatured: data.isFeatured,
+      banner: data.isFeatured ? data.banner : null,
+      price: data.price,
+    });
+
+    if (!result.success) {
+      setError(result.message);
+      return;
+    }
+
+    toast.add({
+      type: "success",
+      description: result.message,
+    });
+
+    router.push("/admin/products");
   };
 
   const generateSlug = () => {
@@ -423,7 +477,13 @@ export default function ProductForm({ type }: ProductFormProps) {
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create Product"}
+          {isSubmitting
+            ? isUpdate
+              ? "Updating..."
+              : "Creating..."
+            : isUpdate
+              ? "Update Product"
+              : "Create Product"}
         </Button>
       </div>
     </form>
