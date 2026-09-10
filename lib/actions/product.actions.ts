@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { LATEST_PRODUCTS_LIMIT, PAGE_SIZE } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-guard";
+import { prisma } from "@/lib/prisma";
 import { convertToPlainObject } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 import { insertProductSchema, updateProductSchema } from "@/lib/validators";
@@ -13,9 +13,7 @@ import { insertProductSchema, updateProductSchema } from "@/lib/validators";
 export async function getLatestProducts() {
   const data = await prisma.product.findMany({
     take: LATEST_PRODUCTS_LIMIT,
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
   });
 
   const plainData = convertToPlainObject(data);
@@ -27,17 +25,12 @@ export async function getLatestProducts() {
   }));
 }
 
-// Get a single product by slug
 export async function getProductBySlug(slug: string) {
   const product = await prisma.product.findUnique({
-    where: {
-      slug,
-    },
+    where: { slug },
   });
 
-  if (!product) {
-    return null;
-  }
+  if (!product) return null;
 
   return {
     ...convertToPlainObject(product),
@@ -46,7 +39,6 @@ export async function getProductBySlug(slug: string) {
   };
 }
 
-// Get all products for admin
 export async function getAllProducts({
   limit = PAGE_SIZE,
   page,
@@ -62,7 +54,6 @@ export async function getAllProducts({
   });
 
   const dataCount = await prisma.product.count();
-
   const plainData = convertToPlainObject(data);
 
   return {
@@ -75,7 +66,6 @@ export async function getAllProducts({
   };
 }
 
-// Delete product
 export async function deleteProduct(id: string) {
   await requireAdmin();
 
@@ -106,15 +96,17 @@ export async function deleteProduct(id: string) {
   }
 }
 
-// Create product
-export async function createProduct(data: z.infer<typeof insertProductSchema>) {
+export async function createProduct(data: z.input<typeof insertProductSchema>) {
   await requireAdmin();
 
   try {
     const product = insertProductSchema.parse(data);
 
     await prisma.product.create({
-      data: product,
+      data: {
+        ...product,
+        images: [],
+      },
     });
 
     revalidatePath("/admin/products");
@@ -131,17 +123,14 @@ export async function createProduct(data: z.infer<typeof insertProductSchema>) {
   }
 }
 
-// Update product
-export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
+export async function updateProduct(data: z.input<typeof updateProductSchema>) {
   await requireAdmin();
 
   try {
     const product = updateProductSchema.parse(data);
 
     const productExists = await prisma.product.findFirst({
-      where: {
-        id: product.id,
-      },
+      where: { id: product.id },
     });
 
     if (!productExists) {
@@ -151,9 +140,7 @@ export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
     const { id, ...updateData } = product;
 
     await prisma.product.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: updateData,
     });
 

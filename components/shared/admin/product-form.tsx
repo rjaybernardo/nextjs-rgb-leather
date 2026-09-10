@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createProduct } from "@/lib/actions/product.actions";
 import { productDefaultValues } from "@/lib/constants";
-import { insertProductSchema } from "@/lib/validators";
 
 type ProductFormProps = {
   type: "Create" | "Update";
@@ -57,25 +56,24 @@ export default function ProductForm({ type }: ProductFormProps) {
   const onSubmit = async (data: ProductFormValues) => {
     setError(null);
 
-    const parsedData = insertProductSchema.safeParse({
-      ...data,
-      price: data.price,
-      stock: data.stock,
-    });
+    if (type === "Create") {
+      const result = await createProduct({
+        name: data.name,
+        slug: data.slug,
+        category: data.category,
+        brand: data.brand,
+        description: data.description,
+        stock: data.stock,
+        price: data.price,
+      });
 
-    if (!parsedData.success) {
-      setError("Please check the form fields and try again.");
-      return;
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+
+      router.push("/admin/products");
     }
-
-    const result = await createProduct(parsedData.data);
-
-    if (!result.success) {
-      setError(result.message);
-      return;
-    }
-
-    router.push("/admin/products");
   };
 
   const generateSlug = () => {
@@ -88,12 +86,10 @@ export default function ProductForm({ type }: ProductFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>
-            {type === "Create" ? "Product Information" : "Edit Product"}
-          </CardTitle>
+          <CardTitle>Product Information</CardTitle>
         </CardHeader>
 
         <CardContent>
@@ -228,11 +224,7 @@ export default function ProductForm({ type }: ProductFormProps) {
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting
-            ? "Creating..."
-            : type === "Create"
-              ? "Create Product"
-              : "Update Product"}
+          {isSubmitting ? "Creating..." : "Create Product"}
         </Button>
       </div>
     </form>
