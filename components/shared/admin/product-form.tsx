@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/toast";
 import { createProduct } from "@/lib/actions/product.actions";
 import { productDefaultValues } from "@/lib/constants";
@@ -55,6 +56,8 @@ export default function ProductForm({ type }: ProductFormProps) {
       price: String(productDefaultValues.price),
       stock: Number(productDefaultValues.stock),
       images: [],
+      isFeatured: false,
+      banner: null,
     },
   });
 
@@ -64,11 +67,26 @@ export default function ProductForm({ type }: ProductFormProps) {
     defaultValue: [],
   });
 
-  // Register images as a virtual React Hook Form field.
+  const isFeatured = useWatch({
+    control,
+    name: "isFeatured",
+    defaultValue: false,
+  });
+
+  const banner = useWatch({
+    control,
+    name: "banner",
+    defaultValue: null,
+  });
+
   register("images", {
     validate: (value) =>
       value.length > 0 || "Product must have at least one image",
   });
+
+  register("isFeatured");
+
+  register("banner");
 
   const onSubmit = async (data: ProductFormValues) => {
     setError(null);
@@ -82,6 +100,8 @@ export default function ProductForm({ type }: ProductFormProps) {
         description: data.description,
         stock: data.stock,
         images: data.images,
+        isFeatured: data.isFeatured,
+        banner: data.isFeatured ? data.banner : null,
         price: data.price,
       });
 
@@ -132,11 +152,54 @@ export default function ProductForm({ type }: ProductFormProps) {
     });
   };
 
+  const handleBannerUploadComplete = (
+    uploadedFiles: Array<{
+      ufsUrl: string;
+    }>,
+  ) => {
+    const bannerUrl = uploadedFiles[0]?.ufsUrl;
+
+    if (!bannerUrl) {
+      toast.add({
+        type: "error",
+        description: "Banner upload completed without a valid file URL.",
+      });
+
+      return;
+    }
+
+    setValue("banner", bannerUrl, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
   const handleUploadError = (uploadError: Error) => {
     toast.add({
       type: "error",
       description: `Image upload failed: ${uploadError.message}`,
     });
+  };
+
+  const handleBannerUploadError = (uploadError: Error) => {
+    toast.add({
+      type: "error",
+      description: `Banner upload failed: ${uploadError.message}`,
+    });
+  };
+
+  const handleFeaturedChange = (checked: boolean) => {
+    setValue("isFeatured", checked, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    if (!checked) {
+      setValue("banner", null, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
   };
 
   return (
@@ -283,6 +346,50 @@ export default function ProductForm({ type }: ProductFormProps) {
                   </div>
 
                   <FieldError errors={[errors.images]} />
+                </CardContent>
+              </Card>
+            </Field>
+
+            {/* Featured Product */}
+            <Field data-invalid={!!errors.isFeatured}>
+              <FieldLabel>Featured Product</FieldLabel>
+
+              <Card>
+                <CardContent className="mt-2 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={isFeatured}
+                      onCheckedChange={(checked) =>
+                        handleFeaturedChange(checked === true)
+                      }
+                    />
+
+                    <span className="text-sm font-medium">Is Featured?</span>
+                  </div>
+
+                  {isFeatured && banner && (
+                    <div className="relative aspect-[1920/680] w-full overflow-hidden rounded-sm">
+                      <Image
+                        src={banner}
+                        alt="Product banner"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 100vw"
+                        className="object-cover object-center"
+                      />
+                    </div>
+                  )}
+
+                  {isFeatured && !banner && (
+                    <div className="upload-field">
+                      <UploadButton
+                        endpoint="imageUploader"
+                        onClientUploadComplete={handleBannerUploadComplete}
+                        onUploadError={handleBannerUploadError}
+                      />
+                    </div>
+                  )}
+
+                  <FieldError errors={[errors.banner]} />
                 </CardContent>
               </Card>
             </Field>
