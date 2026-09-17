@@ -23,22 +23,42 @@ export const metadata: Metadata = {
 type OrdersPageProps = {
   searchParams: Promise<{
     page?: string;
+    query?: string;
   }>;
 };
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   await requireAdmin();
 
-  const { page } = await searchParams;
+  const { page, query: searchText = "" } = await searchParams;
+
   const currentPage = Number(page) || 1;
 
   const orders = await getAllOrders({
     page: currentPage,
+    query: searchText,
   });
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
+      <div className="flex items-center gap-3">
+        <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
+
+        {searchText && (
+          <div>
+            Filtered by <i>&quot;{searchText}&quot;</i>{" "}
+            <Link
+              href="/admin/orders"
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+              })}
+            >
+              Remove Filter
+            </Link>
+          </div>
+        )}
+      </div>
 
       <div className="overflow-x-auto">
         <Table>
