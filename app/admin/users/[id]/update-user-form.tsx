@@ -1,9 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { updateUser } from "@/lib/actions/user.actions";
+import { USER_ROLES } from "@/lib/constants";
+import { updateUserSchema } from "@/lib/validators";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -14,21 +18,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { USER_ROLES } from "@/lib/constants";
-import { updateUserSchema } from "@/lib/validators";
+import { toast } from "@/components/ui/toast";
 
 const UpdateUserForm = ({
   user,
 }: {
   user: z.infer<typeof updateUserSchema>;
 }) => {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof updateUserSchema>>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: user,
   });
 
+  // Handle submit
+  const onSubmit = async (values: z.infer<typeof updateUserSchema>) => {
+    try {
+      const res = await updateUser({
+        ...values,
+        id: user.id,
+      });
+
+      if (!res.success) {
+        toast.add({
+          type: "error",
+          description: res.message,
+        });
+
+        return;
+      }
+
+      toast.add({
+        type: "success",
+        description: res.message,
+      });
+
+      form.reset();
+      router.push("/admin/users");
+    } catch (error) {
+      toast.add({
+        type: "error",
+        description:
+          error instanceof Error ? error.message : "Something went wrong",
+      });
+    }
+  };
+
   return (
-    <form className="space-y-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {/* Email */}
       <Controller
         name="email"
