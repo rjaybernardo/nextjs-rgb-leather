@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import DeleteDialog from "@/components/shared/delete-dialog";
 import Pagination from "@/components/shared/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -11,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllUsers } from "@/lib/actions/user.actions";
+import { deleteUser, getAllUsers } from "@/lib/actions/user.actions";
 import { formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -54,7 +55,6 @@ const AdminUserPage = async (props: {
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
-
                 <TableCell className="flex gap-1">
                   <Link
                     href={`/admin/users/${user.id}`}
@@ -65,6 +65,8 @@ const AdminUserPage = async (props: {
                   >
                     Edit
                   </Link>
+
+                  <DeleteDialog id={user.id} action={deleteUser} />
                 </TableCell>
               </TableRow>
             ))}

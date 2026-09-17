@@ -16,6 +16,7 @@ import {
   signUpFormSchema,
 } from "../validators";
 import { PAGE_SIZE } from "@/lib/constants";
+import { revalidatePath } from "next/cache";
 
 const persistGuestCart = async (userId: string) => {
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -369,4 +370,27 @@ export async function getAllUsers({
     data,
     totalPages: Math.ceil(dataCount / limit),
   };
+}
+
+// Delete user by ID
+export async function deleteUser(id: string) {
+  try {
+    await prisma.user.delete({
+      where: {
+        id,
+      },
+    });
+
+    revalidatePath("/admin/users");
+
+    return {
+      success: true,
+      message: "User deleted successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
 }
