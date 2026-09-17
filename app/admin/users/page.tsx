@@ -19,22 +19,43 @@ export const metadata: Metadata = {
   title: "Admin Users",
 };
 
-const AdminUserPage = async (props: {
+type AdminUsersPageProps = {
   searchParams: Promise<{
     page?: string;
+    query?: string;
   }>;
-}) => {
-  const searchParams = await props.searchParams;
+};
 
-  const { page = "1" } = searchParams;
+const AdminUsersPage = async ({ searchParams }: AdminUsersPageProps) => {
+  const { page, query: searchText = "" } = await searchParams;
+
+  const currentPage = Number(page) || 1;
 
   const users = await getAllUsers({
-    page: Number(page),
+    page: currentPage,
+    query: searchText,
   });
 
   return (
-    <div className="space-y-2">
-      <h1 className="h2-bold">Users</h1>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <h1 className="h2-bold">Users</h1>
+
+        {searchText && (
+          <div>
+            Filtered by <i>&quot;{searchText}&quot;</i>{" "}
+            <Link
+              href="/admin/users"
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+              })}
+            >
+              Remove Filter
+            </Link>
+          </div>
+        )}
+      </div>
 
       <div>
         <Table>
@@ -49,36 +70,50 @@ const AdminUserPage = async (props: {
           </TableHeader>
 
           <TableBody>
-            {users.data.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{formatId(user.id)}</TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell className="flex gap-1">
-                  <Link
-                    href={`/admin/users/${user.id}`}
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "sm",
-                    })}
-                  >
-                    Edit
-                  </Link>
-
-                  <DeleteDialog id={user.id} action={deleteUser} />
+            {users.data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  No users found.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              users.data.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{formatId(user.id)}</TableCell>
+
+                  <TableCell>{user.name}</TableCell>
+
+                  <TableCell>{user.email}</TableCell>
+
+                  <TableCell>{user.role}</TableCell>
+
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                        })}
+                      >
+                        Edit
+                      </Link>
+
+                      <DeleteDialog id={user.id} action={deleteUser} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
 
         {users.totalPages > 1 && (
-          <Pagination page={page} totalPages={users.totalPages} />
+          <Pagination page={currentPage} totalPages={users.totalPages} />
         )}
       </div>
     </div>
   );
 };
 
-export default AdminUserPage;
+export default AdminUsersPage;

@@ -18,6 +18,7 @@ import {
 } from "../validators";
 import { PAGE_SIZE } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "../generated/prisma/client";
 
 const persistGuestCart = async (userId: string) => {
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -351,21 +352,42 @@ export async function updateProfile(user: { name: string; email: string }) {
   }
 }
 
-// Get all users
+// Get all users (Admin)
 export async function getAllUsers({
   limit = PAGE_SIZE,
   page,
+  query,
 }: {
   limit?: number;
   page: number;
+  query: string;
 }) {
+  const queryFilter: Prisma.UserWhereInput =
+    query && query !== "all"
+      ? {
+          name: {
+            contains: query,
+            mode: "insensitive",
+          },
+        }
+      : {};
+
   const data = await prisma.user.findMany({
-    orderBy: { createdAt: "desc" },
+    where: {
+      ...queryFilter,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
     take: limit,
     skip: (page - 1) * limit,
   });
 
-  const dataCount = await prisma.user.count();
+  const dataCount = await prisma.user.count({
+    where: {
+      ...queryFilter,
+    },
+  });
 
   return {
     data,
