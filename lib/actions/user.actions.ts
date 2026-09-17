@@ -15,6 +15,7 @@ import {
   signInFormSchema,
   signUpFormSchema,
 } from "../validators";
+import { PAGE_SIZE } from "@/lib/constants";
 
 const persistGuestCart = async (userId: string) => {
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -346,4 +347,26 @@ export async function updateProfile(user: { name: string; email: string }) {
       message: formatError(error),
     };
   }
+}
+
+// Get all users
+export async function getAllUsers({
+  limit = PAGE_SIZE,
+  page,
+}: {
+  limit?: number;
+  page: number;
+}) {
+  const data = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    skip: (page - 1) * limit,
+  });
+
+  const dataCount = await prisma.user.count();
+
+  return {
+    data,
+    totalPages: Math.ceil(dataCount / limit),
+  };
 }
