@@ -1,3 +1,4 @@
+import IconBoxes from "@/components/icon-boxes";
 import ProductList from "@/components/shared/product/product-list";
 import { getLatestProducts } from "@/lib/actions/product.actions";
 
@@ -9,6 +10,8 @@ const HomePage = async () => {
       <h2 className="h2-bold">Latest Products</h2>
 
       <ProductList title="Newest Arrivals" data={latestProducts} />
+
+      <IconBoxes />
     </div>
   );
 };
