@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { z } from "zod";
 
 import { auth, signIn, signOut } from "@/auth";
+import { getMyCart } from "@/lib/actions/cart.actions";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 
@@ -193,6 +194,16 @@ export async function signUp(_prevState: unknown, formData: FormData) {
 }
 
 export async function signOutUser() {
+  const currentCart = await getMyCart();
+
+  if (currentCart) {
+    await prisma.cart.delete({
+      where: {
+        id: currentCart.id,
+      },
+    });
+  }
+
   await signOut({
     redirectTo: "/",
   });
