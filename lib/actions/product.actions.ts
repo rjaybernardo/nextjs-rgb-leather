@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { z } from "zod";
 
 import { LATEST_PRODUCTS_LIMIT, PAGE_SIZE } from "@/lib/constants";
@@ -13,24 +13,50 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { recordAudit } from "@/lib/audit";
 import { recordStockMovement } from "@/lib/stock";
 import { productInclude, toProduct } from "@/lib/product-mapper";
+import {
+  CATALOG_REVALIDATE_SECONDS,
+  CATALOG_TAG,
+  invalidateCatalog,
+} from "@/lib/catalog-cache";
+
+const catalogCache = {
+  tags: [CATALOG_TAG],
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+};
+
+const cachedLatestProducts = unstable_cache(
+  async () => {
+      const data = await prisma.product.findMany({
+        take: LATEST_PRODUCTS_LIMIT,
+        orderBy: { createdAt: "desc" },
+        include: productInclude,
+      });
+
+      return data.map(toProduct);
+  },
+  ["latest-products"],
+  catalogCache,
+);
 
 export async function getLatestProducts() {
-  const data = await prisma.product.findMany({
-    take: LATEST_PRODUCTS_LIMIT,
-    orderBy: { createdAt: "desc" },
-    include: productInclude,
-  });
-
-  return data.map(toProduct);
+  return cachedLatestProducts();
 }
 
-export async function getProductBySlug(slug: string) {
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: productInclude,
-  });
+const cachedProductBySlug = unstable_cache(
+  async (slug: string) => {
+      const product = await prisma.product.findUnique({
+        where: { slug },
+        include: productInclude,
+      });
 
-  return product ? toProduct(product) : null;
+      return product ? toProduct(product) : null;
+  },
+  ["product-by-slug"],
+  catalogCache,
+);
+
+export async function getProductBySlug(slug: string) {
+  return cachedProductBySlug(slug);
 }
 
 // Get single product by id
@@ -71,15 +97,69 @@ const PRODUCT_ORDER_BY: Record<
   rating: [{ rating: "desc" }, { numReviews: "desc" }],
 };
 
-export async function getAllProducts({
-  query,
-  limit = PAGE_SIZE,
-  page,
-  category,
-  price,
-  rating,
-  sort = "newest",
-}: {
+const cachedProductSearch = unstable_cache(
+  async ({
+    query,
+    limit = PAGE_SIZE,
+    page,
+    category,
+    price,
+    rating,
+    sort = "newest",
+  }: {
+    query: string;
+    limit?: number;
+    page: number;
+    category?: string;
+    price?: string;
+    rating?: string;
+    sort?: string;
+  }) => {
+    const priceRange = parsePriceRange(price);
+    const minRating = Number(rating);
+
+    const where: Prisma.ProductWhereInput = {
+      ...(query && query !== "all"
+        ? {
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { brand: { name: { contains: query, mode: "insensitive" } } },
+              { category: { name: { contains: query, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+      ...(category && category !== "all" ? { category: { slug: category } } : {}),
+      ...(priceRange ? { price: priceRange } : {}),
+      ...(Number.isFinite(minRating) && minRating > 0
+        ? { rating: { gte: minRating } }
+        : {}),
+    };
+
+    const orderBy =
+      PRODUCT_ORDER_BY[sort as ProductSort] ?? PRODUCT_ORDER_BY.newest;
+
+    const [data, dataCount] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: productInclude,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    return {
+      data: data.map(toProduct),
+      totalPages: Math.ceil(dataCount / limit),
+      totalCount: dataCount,
+    };
+  },
+  ["product-search"],
+  catalogCache,
+);
+
+export async function getAllProducts(params: {
   query: string;
   limit?: number;
   page: number;
@@ -88,92 +168,70 @@ export async function getAllProducts({
   rating?: string;
   sort?: string;
 }) {
-  const priceRange = parsePriceRange(price);
-  const minRating = Number(rating);
-
-  const where: Prisma.ProductWhereInput = {
-    ...(query && query !== "all"
-      ? {
-          OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { brand: { name: { contains: query, mode: "insensitive" } } },
-            { category: { name: { contains: query, mode: "insensitive" } } },
-          ],
-        }
-      : {}),
-    ...(category && category !== "all" ? { category: { slug: category } } : {}),
-    ...(priceRange ? { price: priceRange } : {}),
-    ...(Number.isFinite(minRating) && minRating > 0
-      ? { rating: { gte: minRating } }
-      : {}),
-  };
-
-  const orderBy =
-    PRODUCT_ORDER_BY[sort as ProductSort] ?? PRODUCT_ORDER_BY.newest;
-
-  const [data, dataCount] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      orderBy,
-      skip: (page - 1) * limit,
-      take: limit,
-      include: productInclude,
-    }),
-    prisma.product.count({ where }),
-  ]);
-
-  return {
-    data: data.map(toProduct),
-    totalPages: Math.ceil(dataCount / limit),
-    totalCount: dataCount,
-  };
+  return cachedProductSearch(params);
 }
 
 // Categories that have products, with counts, for navigation and filters
-export async function getAllCategories() {
-  const categories = await prisma.category.findMany({
-    orderBy: {
-      name: "asc",
-    },
-    include: {
-      _count: {
-        select: {
-          products: true,
+const cachedCategories = unstable_cache(
+  async () => {
+    const categories = await prisma.category.findMany({
+      orderBy: {
+        name: "asc",
+      },
+      include: {
+        _count: {
+          select: {
+            products: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  return categories
-    .filter((category) => category._count.products > 0)
-    .map((category) => ({
-      name: category.name,
-      slug: category.slug,
-      count: category._count.products,
-    }));
+    return categories
+      .filter((category) => category._count.products > 0)
+      .map((category) => ({
+        name: category.name,
+        slug: category.slug,
+        count: category._count.products,
+      }));
+  },
+  ["categories"],
+  catalogCache,
+);
+
+export async function getAllCategories() {
+  return cachedCategories();
 }
 
 // Featured products that have a banner image, for the home carousel
-export async function getFeaturedProducts() {
-  const data = await prisma.product.findMany({
-    where: {
-      isFeatured: true,
-      banner: {
-        not: null,
+const cachedFeaturedProducts = unstable_cache(
+  async () => {
+    const data = await prisma.product.findMany({
+      where: {
+        isFeatured: true,
+        banner: {
+          not: null,
+        },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 5,
-  });
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 5,
+    });
 
-  return convertToPlainObject(data).map((product) => ({
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    banner: product.banner as string,
-  }));
+    return convertToPlainObject(data).map((product) => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      banner: product.banner as string,
+    }));
+  },
+  ["featured-products"],
+  catalogCache,
+);
+
+export async function getFeaturedProducts() {
+  return cachedFeaturedProducts();
 }
 
 export async function deleteProduct(id: string) {
@@ -208,6 +266,7 @@ export async function deleteProduct(id: string) {
       details: { name: productExists.name },
     });
 
+    invalidateCatalog();
     revalidatePath("/admin/products");
 
     return {
@@ -251,6 +310,7 @@ export async function createProduct(data: z.input<typeof insertProductSchema>) {
       details: { name: created.name },
     });
 
+    invalidateCatalog();
     revalidatePath("/admin/products");
 
     return {
@@ -332,6 +392,7 @@ export async function updateProduct(data: z.input<typeof updateProductSchema>) {
       },
     });
 
+    invalidateCatalog();
     revalidatePath("/admin/products");
     revalidatePath(`/product/${updateData.slug}`);
 

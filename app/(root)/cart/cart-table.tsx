@@ -111,7 +111,9 @@ const CartTable = ({ cart }: CartTableProps) => {
                           )}
                         </Button>
 
-                        <span>{item.qty}</span>
+                        <span aria-live="polite" aria-label={`Quantity ${item.qty}`}>
+                          {item.qty}
+                        </span>
 
                         <Button
                           type="button"

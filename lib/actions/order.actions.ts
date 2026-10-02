@@ -24,6 +24,7 @@ import {
 } from "@/lib/validators";
 import { recordAudit } from "@/lib/audit";
 import { recordStockMovement } from "@/lib/stock";
+import { invalidateCatalog } from "@/lib/catalog-cache";
 import { z } from "zod";
 import type { CartItem } from "@/types";
 import {
@@ -242,6 +243,9 @@ export async function createOrder(): Promise<CreateOrderResult> {
       throw new Error("Order was not created");
     }
 
+    // Stock changed
+    invalidateCatalog();
+
     await sendEmail(
       orderPlacedEmail(user.email, {
         id: insertedOrderId,
@@ -450,6 +454,8 @@ export async function deleteOrder(id: string) {
       }
     });
 
+    invalidateCatalog();
+
     await recordAudit({
       actor: session,
       action: "order.delete",
@@ -540,6 +546,8 @@ export async function cancelOrder(orderId: string) {
         });
       }
     });
+
+    invalidateCatalog();
 
     if (!isOwner) {
       await recordAudit({

@@ -1,19 +1,9 @@
 import { isAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { toCsv } from "@/lib/csv";
 import type { ShippingAddress } from "@/types";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-// Quote every cell, and stop spreadsheet apps treating text as a formula
-const csvCell = (value: unknown) => {
-  let text = value === null || value === undefined ? "" : String(value);
-
-  if (/^[=+\-@\t\r]/.test(text)) {
-    text = `'${text}`;
-  }
-
-  return `"${text.replace(/"/g, '""')}"`;
-};
 
 const manilaDate = (date: Date | null) =>
   date
@@ -113,10 +103,7 @@ export async function GET(request: Request) {
     ];
   });
 
-  // BOM so Excel reads accented names (e.g. Peñaflor) as UTF-8
-  const csv =
-    "﻿" +
-    [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+  const csv = toCsv([header, ...rows]);
 
   const range = [from, to].filter(Boolean).join("_to_") || "all";
 

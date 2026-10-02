@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import ProductPrice from "@/components/shared/product/product-price";
@@ -9,7 +11,7 @@ import CartButton from "@/components/shared/product/cart-button";
 import WishlistButton from "@/components/shared/product/wishlist-button";
 import { getMyWishlistIds } from "@/lib/actions/wishlist.actions";
 import Rating from "@/components/shared/product/rating";
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { APP_NAME, LOW_STOCK_THRESHOLD, SERVER_URL } from "@/lib/constants";
 
 import ReviewList from "./review-list";
 
@@ -19,11 +21,50 @@ type ProductDetailsPageProps = {
   }>;
 };
 
+// generateMetadata and the page share one lookup per request
+const getProduct = cache(getProductBySlug);
+
+const absoluteUrl = (path: string) =>
+  path.startsWith("http") ? path : `${SERVER_URL}${path}`;
+
+const summarize = (text: string, max = 160) =>
+  text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+
+export async function generateMetadata({
+  params,
+}: ProductDetailsPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+
+  if (!product) {
+    return {
+      title: "Product not found",
+    };
+  }
+
+  const description = summarize(product.description);
+  const image = product.images[0];
+
+  return {
+    title: product.name,
+    description,
+    alternates: {
+      canonical: `/product/${product.slug}`,
+    },
+    openGraph: {
+      title: `${product.name} | ${APP_NAME}`,
+      description,
+      url: `/product/${product.slug}`,
+      ...(image ? { images: [{ url: image, alt: product.name }] } : {}),
+    },
+  };
+}
+
 const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
   const { slug } = await params;
 
   const [product, wishlistIds] = await Promise.all([
-    getProductBySlug(slug),
+    getProduct(slug),
     getMyWishlistIds(),
   ]);
 
@@ -31,8 +72,51 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
     notFound();
   }
 
+  // Structured data for search results (price, stock, rating)
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images.map(absoluteUrl),
+    sku: product.id,
+    category: product.category,
+    brand: {
+      "@type": "Brand",
+      name: product.brand,
+    },
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl(`/product/${product.slug}`),
+      priceCurrency: "PHP",
+      price: product.price.toFixed(2),
+      availability:
+        product.stock > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+    ...(product.numReviews > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating.toFixed(1),
+            reviewCount: product.numReviews,
+          },
+        }
+      : {}),
+  };
+
   return (
     <section>
+      <script
+        type="application/ld+json"
+        // Escape "<" so product text can't close the script tag
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
         {/* Images Column */}
         <div className="md:col-span-2">

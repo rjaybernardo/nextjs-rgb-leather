@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Placeholders: nothing in CI connects to a database. Prisma's config and
+    # client need the variables to exist, and Auth.js needs a secret to build.
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      DIRECT_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      AUTH_SECRET: ci-placeholder-secret-not-used-in-production
+      NEXT_TELEMETRY_DISABLED: 1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Also runs `prisma generate` through the postinstall script
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

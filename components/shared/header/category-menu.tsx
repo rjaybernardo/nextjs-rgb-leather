@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { connection } from "next/server";
 
 import {
   DropdownMenu,
@@ -13,6 +14,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { getAllCategories } from "@/lib/actions/product.actions";
 
 const CategoryMenu = async () => {
+  // Request-time only: the menu reflects current categories, and builds
+  // don't need a database connection
+  await connection();
+
   const categories = await getAllCategories();
 
   return (

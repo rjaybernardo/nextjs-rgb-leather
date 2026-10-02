@@ -33,7 +33,11 @@ export default function UserLayout({
         </div>
       </header>
 
-      <main className="wrapper flex-1 space-y-4 p-8 pt-6">{children}</main>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="wrapper flex-1 space-y-4 p-8 pt-6 outline-none"
+      >{children}</main>
     </div>
   );
 }

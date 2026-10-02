@@ -34,7 +34,11 @@ export default function AdminLayout({
         </div>
       </div>
 
-      <main className="container mx-auto flex-1 space-y-4 p-8 pt-6">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="container mx-auto flex-1 space-y-4 p-8 pt-6 outline-none"
+      >
         {children}
       </main>
     </div>

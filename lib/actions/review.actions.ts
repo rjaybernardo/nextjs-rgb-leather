@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { invalidateCatalog } from "@/lib/catalog-cache";
 import { prisma } from "@/lib/prisma";
 import { assertRateLimit } from "@/lib/rate-limit";
 import { round2 } from "@/lib/utils";
@@ -187,6 +188,8 @@ export async function upsertReview(_prevState: unknown, formData: FormData) {
       return Boolean(before);
     });
 
+    // Rating and review count changed
+    invalidateCatalog();
     revalidatePath(`/product/${product.slug}`);
 
     return {

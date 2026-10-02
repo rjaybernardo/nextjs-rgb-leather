@@ -8,8 +8,12 @@ import {
   getLatestProducts,
 } from "@/lib/actions/product.actions";
 import Link from "next/link";
+import { connection } from "next/server";
 
 const HomePage = async () => {
+  // Per-visitor page (wishlist hearts) built from live product data
+  await connection();
+
   const [latestProducts, featuredProducts] = await Promise.all([
     getLatestProducts(),
     getFeaturedProducts(),

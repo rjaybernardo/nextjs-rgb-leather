@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import slugify from "slugify";
 
 import { recordAudit } from "@/lib/audit";
+import { invalidateCatalog } from "@/lib/catalog-cache";
 import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
@@ -23,6 +24,7 @@ const table = (kind: TaxonomyKind) =>
   (kind === "category" ? prisma.category : prisma.brand) as typeof prisma.category;
 
 const revalidateTaxonomy = () => {
+  invalidateCatalog();
   revalidatePath("/admin/categories");
   revalidatePath("/search");
   revalidatePath("/", "layout");
