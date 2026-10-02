@@ -22,6 +22,11 @@ async function getAdminSession() {
   return user?.role === "admin" ? session : null;
 }
 
+// For UI: whether to show admin-only links and controls
+export async function isAdmin() {
+  return (await getAdminSession()) !== null;
+}
+
 // For pages: redirects non-admins to /unauthorized
 export async function requireAdmin() {
   const session = await getAdminSession();

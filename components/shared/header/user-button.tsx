@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOutUser } from "@/lib/actions/user.actions";
+import { isAdmin } from "@/lib/auth-guard";
 
 const UserButton = async () => {
   const session = await auth();
@@ -74,7 +75,7 @@ const UserButton = async () => {
             >
               Order History
             </DropdownMenuItem>
-            {session.user.role === "admin" && (
+            {(await isAdmin()) && (
               <DropdownMenuItem render={<Link href="/admin/overview" />}>
                 Admin
               </DropdownMenuItem>

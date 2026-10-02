@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { auth } from "@/auth";
+import { isAdmin } from "@/lib/auth-guard";
 import { getOrderById } from "@/lib/actions/order.actions";
 import type { ShippingAddress } from "@/types";
 
@@ -20,7 +20,7 @@ type OrderDetailsPageProps = {
 const OrderDetailsPage = async ({ params }: OrderDetailsPageProps) => {
   const { id } = await params;
 
-  const [order, session] = await Promise.all([getOrderById(id), auth()]);
+  const [order, admin] = await Promise.all([getOrderById(id), isAdmin()]);
 
   if (!order) {
     notFound();
@@ -32,7 +32,7 @@ const OrderDetailsPage = async ({ params }: OrderDetailsPageProps) => {
         ...order,
         shippingAddress: order.shippingAddress as ShippingAddress,
       }}
-      isAdmin={session?.user?.role === "admin"}
+      isAdmin={admin}
     />
   );
 };
