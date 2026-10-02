@@ -95,6 +95,14 @@ export async function deleteProduct(id: string) {
       throw new Error("Product not found");
     }
 
+    const orderItemCount = await prisma.orderItem.count({
+      where: { productId: id },
+    });
+
+    if (orderItemCount > 0) {
+      throw new Error("Product has existing orders and cannot be deleted");
+    }
+
     await prisma.product.delete({
       where: { id },
     });

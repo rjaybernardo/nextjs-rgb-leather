@@ -67,8 +67,6 @@ export const authConfigWithCredentials = {
   ],
 
   callbacks: {
-    ...authConfig.callbacks,
-
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;

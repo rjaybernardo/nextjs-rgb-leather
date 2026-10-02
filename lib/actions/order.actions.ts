@@ -80,19 +80,40 @@ export async function createOrder(): Promise<CreateOrderResult> {
         data: order,
       });
 
-      for (const item of cart.items as CartItem[]) {
-        await tx.orderItem.create({
+      const items = cart.items as CartItem[];
+
+      // Decrement stock; the gte guard prevents overselling under concurrency
+      for (const item of items) {
+        const { count } = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stock: {
+              gte: item.qty,
+            },
+          },
           data: {
-            orderId: insertedOrder.id,
-            productId: item.productId,
-            qty: item.qty,
-            price: item.price,
-            name: item.name,
-            slug: item.slug,
-            image: item.image,
+            stock: {
+              decrement: item.qty,
+            },
           },
         });
+
+        if (count === 0) {
+          throw new Error(`Not enough stock for ${item.name}`);
+        }
       }
+
+      await tx.orderItem.createMany({
+        data: items.map((item) => ({
+          orderId: insertedOrder.id,
+          productId: item.productId,
+          qty: item.qty,
+          price: item.price,
+          name: item.name,
+          slug: item.slug,
+          image: item.image,
+        })),
+      });
 
       await tx.cart.update({
         where: {
