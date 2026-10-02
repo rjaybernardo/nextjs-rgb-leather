@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import { createOrder } from "@/lib/actions/order.actions";
 
 const PlaceOrderForm = () => {
@@ -15,12 +16,18 @@ const PlaceOrderForm = () => {
     startTransition(async () => {
       const result = await createOrder();
 
-      if (result.redirectTo) {
-        router.push(result.redirectTo);
-        return;
+      if (!result.success) {
+        toast.add({
+          title: "Unable to place order",
+          description: result.message,
+          type: "error",
+        });
       }
 
-      console.error(result.message);
+      if (result.redirectTo) {
+        router.push(result.redirectTo);
+        router.refresh();
+      }
     });
   };
 

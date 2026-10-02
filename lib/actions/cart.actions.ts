@@ -6,30 +6,11 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { convertToPlainObject, round2 } from "@/lib/utils";
+import { calcPrice } from "@/lib/cart-pricing";
+import { convertToPlainObject } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 import { cartItemSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
-
-// Calculate cart price based on items
-const calcPrice = (items: CartItem[]) => {
-  const itemsPrice = round2(
-    items.reduce((acc, item) => acc + Number(item.price) * item.qty, 0),
-  );
-
-  const shippingPrice = round2(itemsPrice > 100 ? 0 : 10);
-
-  const taxPrice = round2(0.15 * itemsPrice);
-
-  const totalPrice = round2(itemsPrice + shippingPrice + taxPrice);
-
-  return {
-    itemsPrice: Number(itemsPrice.toFixed(2)),
-    shippingPrice: Number(shippingPrice.toFixed(2)),
-    taxPrice: Number(taxPrice.toFixed(2)),
-    totalPrice: Number(totalPrice.toFixed(2)),
-  };
-};
 
 // Add item to cart
 export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {

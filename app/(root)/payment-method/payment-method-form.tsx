@@ -16,7 +16,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { updateUserPaymentMethod } from "@/lib/actions/user.actions";
-import { DEFAULT_PAYMENT_METHOD, PAYMENT_METHODS } from "@/lib/constants";
+import {
+  DEFAULT_PAYMENT_METHOD,
+  getPaymentMethodLabel,
+  PAYMENT_METHODS,
+} from "@/lib/constants";
 import { paymentMethodSchema } from "@/lib/validators";
 
 type PaymentMethodFormProps = {
@@ -34,7 +38,11 @@ const PaymentMethodForm = ({
   const form = useForm<PaymentMethodFormValues>({
     resolver: zodResolver(paymentMethodSchema),
     defaultValues: {
-      type: preferredPaymentMethod || DEFAULT_PAYMENT_METHOD,
+      type:
+        preferredPaymentMethod &&
+        PAYMENT_METHODS.includes(preferredPaymentMethod)
+          ? preferredPaymentMethod
+          : DEFAULT_PAYMENT_METHOD,
     },
   });
 
@@ -82,10 +90,7 @@ const PaymentMethodForm = ({
                       .toLowerCase()
                       .replace(/[^a-z0-9]+/g, "-")}`;
 
-                    const label =
-                      paymentMethod === "CashOnDelivery"
-                        ? "Cash on Delivery"
-                        : paymentMethod;
+                    const label = getPaymentMethodLabel(paymentMethod);
 
                     return (
                       <label

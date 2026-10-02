@@ -4,13 +4,20 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
+import { calcPrice } from "@/lib/cart-pricing";
 import { getUserById } from "@/lib/actions/user.actions";
 import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
-import { PAGE_SIZE } from "@/lib/constants";
+import { PAGE_SIZE, PAYMENT_METHODS, SERVER_URL } from "@/lib/constants";
+import { markOrderPaid, syncPayMongoPayment } from "@/lib/order-payment";
+import {
+  createCheckoutSession,
+  retrieveCheckoutSession,
+  toCentavos,
+} from "@/lib/paymongo";
 import { Prisma } from "@/lib/generated/prisma/client";
 
 type CreateOrderResult =
@@ -57,7 +64,7 @@ export async function createOrder(): Promise<CreateOrderResult> {
       };
     }
 
-    if (!user.paymentMethod) {
+    if (!user.paymentMethod || !PAYMENT_METHODS.includes(user.paymentMethod)) {
       return {
         success: false,
         message: "Please select a payment method",
@@ -65,22 +72,88 @@ export async function createOrder(): Promise<CreateOrderResult> {
       };
     }
 
+    // Re-price from the database: product details may have changed since
+    // the items were added to the cart
+    const cartItems = cart.items as CartItem[];
+
+    const products = await prisma.product.findMany({
+      where: {
+        id: {
+          in: cartItems.map((item) => item.productId),
+        },
+      },
+    });
+
+    const productsById = new Map(
+      products.map((product) => [product.id, product]),
+    );
+
+    const unavailable = cartItems.find(
+      (item) => !productsById.has(item.productId),
+    );
+
+    if (unavailable) {
+      return {
+        success: false,
+        message: `${unavailable.name} is no longer available. Remove it from your cart to continue.`,
+        redirectTo: "/cart",
+      };
+    }
+
+    const items: CartItem[] = cartItems.map((item) => {
+      const product = productsById.get(item.productId)!;
+
+      return {
+        ...item,
+        name: product.name,
+        slug: product.slug,
+        image: product.images[0] ?? item.image,
+        price: Number(product.price),
+      };
+    });
+
+    const prices = calcPrice(items);
+
+    // Also catches totals saved under older tax or shipping rules
+    const pricesChanged =
+      prices.totalPrice !== cart.totalPrice ||
+      items.some(
+        (item, index) => item.price !== Number(cartItems[index].price),
+      );
+
+    if (pricesChanged) {
+      await prisma.cart.update({
+        where: {
+          id: cart.id,
+        },
+        data: {
+          items,
+          ...prices,
+        },
+      });
+
+      return {
+        success: false,
+        message:
+          "Some prices changed since you added these items. Please review your order and place it again.",
+        redirectTo: "/place-order",
+      };
+    }
+
     const order = insertOrderSchema.parse({
       userId: user.id,
       shippingAddress: user.address,
       paymentMethod: user.paymentMethod,
-      itemsPrice: String(cart.itemsPrice),
-      shippingPrice: String(cart.shippingPrice),
-      taxPrice: String(cart.taxPrice),
-      totalPrice: String(cart.totalPrice),
+      itemsPrice: String(prices.itemsPrice),
+      shippingPrice: String(prices.shippingPrice),
+      taxPrice: String(prices.taxPrice),
+      totalPrice: String(prices.totalPrice),
     });
 
     const insertedOrderId = await prisma.$transaction(async (tx) => {
       const insertedOrder = await tx.order.create({
         data: order,
       });
-
-      const items = cart.items as CartItem[];
 
       // Decrement stock; the gte guard prevents overselling under concurrency
       for (const item of items) {
@@ -315,44 +388,32 @@ export async function deleteOrder(id: string) {
   }
 }
 
-// Update Order To Paid
-async function updateOrderToPaid({ orderId }: { orderId: string }) {
-  const order = await prisma.order.findUnique({
-    where: {
-      id: orderId,
-    },
-  });
-
-  if (!order) {
-    throw new Error("Order not found");
-  }
-
-  if (order.isPaid) {
-    return;
-  }
-
-  await prisma.order.update({
-    where: {
-      id: orderId,
-    },
-    data: {
-      isPaid: true,
-      paidAt: new Date(),
-    },
-  });
-}
-
 // Update Order To Paid By COD
 export async function updateOrderToPaidByCOD(orderId: string) {
   try {
     await assertAdmin();
 
-    await updateOrderToPaid({
-      orderId,
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
     });
 
-    revalidatePath(`/order/${orderId}`);
-    revalidatePath("/admin/orders");
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    if (order.paymentMethod !== "CashOnDelivery") {
+      throw new Error("Only cash on delivery orders can be marked paid here");
+    }
+
+    await markOrderPaid({
+      orderId,
+      paymentResult: {
+        provider: "cod",
+        status: "paid",
+      },
+    });
 
     return {
       success: true,
@@ -485,4 +546,162 @@ export async function getOrderSummary() {
     latestOrders,
     salesData,
   };
+}
+
+// Start (or resume) a PayMongo checkout for the signed-in user's order
+export async function startPayMongoCheckout(orderId: string) {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      throw new Error("You must be signed in to pay for an order");
+    }
+
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        orderitems: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!order || order.userId !== session.user.id) {
+      throw new Error("Order not found");
+    }
+
+    if (order.isPaid) {
+      throw new Error("This order is already paid");
+    }
+
+    if (order.paymentMethod !== "PayMongo") {
+      throw new Error("This order is not set up for online payment");
+    }
+
+    // Reuse an open checkout so the customer can't pay twice
+    const existing = order.paymentResult as {
+      checkoutSessionId?: string;
+    } | null;
+
+    if (existing?.checkoutSessionId) {
+      const previous = await retrieveCheckoutSession(
+        existing.checkoutSessionId,
+      );
+
+      if (previous.attributes.status === "active") {
+        return {
+          success: true,
+          message: "Redirecting to PayMongo",
+          redirectTo: previous.attributes.checkout_url,
+        };
+      }
+    }
+
+    const lineItems = order.orderitems.map((item) => ({
+      name: item.name,
+      amount: toCentavos(Number(item.price)),
+      currency: "PHP" as const,
+      quantity: item.qty,
+      ...(item.image.startsWith("https://") ? { images: [item.image] } : {}),
+    }));
+
+    const shippingPrice = Number(order.shippingPrice);
+
+    if (shippingPrice > 0) {
+      lineItems.push({
+        name: "Shipping",
+        amount: toCentavos(shippingPrice),
+        currency: "PHP",
+        quantity: 1,
+      });
+    }
+
+    const lineItemsTotal = lineItems.reduce(
+      (sum, item) => sum + item.amount * item.quantity,
+      0,
+    );
+
+    if (lineItemsTotal !== toCentavos(Number(order.totalPrice))) {
+      throw new Error("Order total doesn't match its items");
+    }
+
+    const orderUrl = `${SERVER_URL}/order/${order.id}`;
+
+    const checkout = await createCheckoutSession({
+      lineItems,
+      referenceNumber: order.id,
+      description: `Order ${order.id}`,
+      successUrl: `${orderUrl}?payment=success`,
+      cancelUrl: `${orderUrl}?payment=cancelled`,
+      billing: {
+        name: order.user.name,
+        email: order.user.email,
+      },
+      metadata: {
+        orderId: order.id,
+      },
+    });
+
+    await prisma.order.update({
+      where: {
+        id: order.id,
+      },
+      data: {
+        paymentResult: {
+          provider: "paymongo",
+          checkoutSessionId: checkout.id,
+          status: "pending",
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: "Redirecting to PayMongo",
+      redirectTo: checkout.attributes.checkout_url,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+// Called when the customer returns from PayMongo; re-checks with PayMongo
+export async function confirmPayMongoPayment(orderId: string) {
+  try {
+    const session = await auth();
+
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    if (!order || order.userId !== session?.user?.id) {
+      throw new Error("Order not found");
+    }
+
+    await syncPayMongoPayment(orderId);
+
+    return {
+      success: true,
+      message: "Payment status updated",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
 }

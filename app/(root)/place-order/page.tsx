@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
+import { getPaymentMethodLabel, PAYMENT_METHODS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import type { ShippingAddress } from "@/types";
 
@@ -44,7 +45,7 @@ const PlaceOrderPage = async () => {
     redirect("/shipping-address");
   }
 
-  if (!user.paymentMethod) {
+  if (!user.paymentMethod || !PAYMENT_METHODS.includes(user.paymentMethod)) {
     redirect("/payment-method");
   }
 
@@ -81,7 +82,7 @@ const PlaceOrderPage = async () => {
             <CardContent className="space-y-4 p-4">
               <h2 className="text-xl">Payment Method</h2>
 
-              <p>{user.paymentMethod}</p>
+              <p>{getPaymentMethodLabel(user.paymentMethod)}</p>
 
               <Link href="/payment-method">
                 <Button variant="outline">Edit</Button>
@@ -150,11 +151,6 @@ const PlaceOrderPage = async () => {
               </div>
 
               <div className="flex justify-between">
-                <span>Tax</span>
-                <span>{formatCurrency(cart.taxPrice)}</span>
-              </div>
-
-              <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>{formatCurrency(cart.shippingPrice)}</span>
               </div>
@@ -162,6 +158,11 @@ const PlaceOrderPage = async () => {
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
                 <span>{formatCurrency(cart.totalPrice)}</span>
+              </div>
+
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Includes 12% VAT</span>
+                <span>{formatCurrency(cart.taxPrice)}</span>
               </div>
 
               <PlaceOrderForm />

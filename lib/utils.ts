@@ -30,8 +30,8 @@ export const round2 = (value: number | string): number => {
   throw new Error("Value is not a number or string");
 };
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat("en-US", {
-  currency: "USD",
+const CURRENCY_FORMATTER = new Intl.NumberFormat("en-PH", {
+  currency: "PHP",
   style: "currency",
   minimumFractionDigits: 2,
 });

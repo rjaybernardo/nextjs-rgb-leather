@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  confirmPayMongoPayment,
   deliverOrder,
+  startPayMongoCheckout,
   updateOrderToPaidByCOD,
 } from "@/lib/actions/order.actions";
+import { getPaymentMethodLabel } from "@/lib/constants";
 import { toast } from "@/components/ui/toast";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import type { Order, ShippingAddress } from "@/types";
@@ -27,10 +30,19 @@ import type { Order, ShippingAddress } from "@/types";
 type OrderDetailsTableProps = {
   order: Order;
   isAdmin: boolean;
+  isOwner: boolean;
+  paymentReturn?: "success" | "cancelled";
 };
 
-const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
+const OrderDetailsTable = ({
+  order,
+  isAdmin,
+  isOwner,
+  paymentReturn,
+}: OrderDetailsTableProps) => {
   const router = useRouter();
+
+  const [isPayPending, startPayTransition] = useTransition();
 
   const [isPaidPending, startPaidTransition] = useTransition();
 
@@ -57,6 +69,60 @@ const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
   const canMarkAsPaid = isAdmin && isCashOnDelivery && !isPaid;
 
   const canMarkAsDelivered = isAdmin && isPaid && !isDelivered;
+
+  const canPayOnline = isOwner && paymentMethod === "PayMongo" && !isPaid;
+
+  // Back from PayMongo: confirm the payment once, then clean up the URL
+  const handledReturn = useRef(false);
+
+  useEffect(() => {
+    if (!paymentReturn || handledReturn.current) return;
+
+    handledReturn.current = true;
+
+    if (paymentReturn === "cancelled") {
+      toast.add({
+        type: "error",
+        title: "Payment not completed",
+        description: "You can try again whenever you're ready.",
+      });
+      router.replace(`/order/${order.id}`);
+      return;
+    }
+
+    if (isPaid) {
+      router.replace(`/order/${order.id}`);
+      return;
+    }
+
+    startPayTransition(async () => {
+      const result = await confirmPayMongoPayment(order.id);
+
+      if (!result.success) {
+        toast.add({ type: "error", description: result.message });
+      }
+
+      router.replace(`/order/${order.id}`);
+      router.refresh();
+    });
+  }, [paymentReturn, isPaid, order.id, router]);
+
+  function handlePayOnline() {
+    startPayTransition(async () => {
+      const result = await startPayMongoCheckout(order.id);
+
+      if (!result.success || !result.redirectTo) {
+        toast.add({
+          type: "error",
+          title: "Unable to start payment",
+          description: result.message,
+        });
+        return;
+      }
+
+      window.location.assign(result.redirectTo);
+    });
+  }
 
   function handleMarkAsPaid() {
     startPaidTransition(async () => {
@@ -98,7 +164,7 @@ const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
             <CardContent className="space-y-4 p-4">
               <h2 className="pb-2 text-xl">Payment Method</h2>
 
-              <p>{paymentMethod}</p>
+              <p>{getPaymentMethodLabel(paymentMethod)}</p>
 
               {isPaid && paidAt ? (
                 <Badge variant="secondary">
@@ -106,6 +172,23 @@ const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
                 </Badge>
               ) : (
                 <Badge variant="destructive">Not paid</Badge>
+              )}
+
+              {canPayOnline && (
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    disabled={isPayPending}
+                    onClick={handlePayOnline}
+                  >
+                    {isPayPending ? "Please wait..." : "Pay now"}
+                  </Button>
+
+                  <p className="text-sm text-muted-foreground">
+                    Pay securely with GCash, Maya, card or QR Ph through
+                    PayMongo.
+                  </p>
+                </div>
               )}
 
               {canMarkAsPaid && (
@@ -211,11 +294,6 @@ const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
               </div>
 
               <div className="flex justify-between">
-                <div>Tax</div>
-                <div>{formatCurrency(taxPrice)}</div>
-              </div>
-
-              <div className="flex justify-between">
                 <div>Shipping</div>
                 <div>{formatCurrency(shippingPrice)}</div>
               </div>
@@ -223,6 +301,11 @@ const OrderDetailsTable = ({ order, isAdmin }: OrderDetailsTableProps) => {
               <div className="flex justify-between font-bold">
                 <div>Total</div>
                 <div>{formatCurrency(totalPrice)}</div>
+              </div>
+
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <div>Includes 12% VAT</div>
+                <div>{formatCurrency(taxPrice)}</div>
               </div>
             </CardContent>
           </Card>

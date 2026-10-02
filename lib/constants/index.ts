@@ -32,10 +32,38 @@ export const shippingAddressDefaultValues = {
 
 export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
   ? process.env.PAYMENT_METHODS.split(",").map((method) => method.trim())
-  : ["PayPal", "Stripe", "CashOnDelivery"];
+  : ["PayMongo", "CashOnDelivery"];
 
 export const DEFAULT_PAYMENT_METHOD =
-  process.env.DEFAULT_PAYMENT_METHOD || "PayPal";
+  process.env.DEFAULT_PAYMENT_METHOD || "PayMongo";
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  PayMongo: "GCash, Maya, card or QR Ph",
+  CashOnDelivery: "Cash on Delivery",
+};
+
+export const getPaymentMethodLabel = (method: string) =>
+  PAYMENT_METHOD_LABELS[method] ?? method;
+
+const numberFromEnv = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+
+  return value !== undefined && value !== "" && Number.isFinite(parsed)
+    ? parsed
+    : fallback;
+};
+
+// Prices are VAT-inclusive; VAT is shown as the included portion
+export const VAT_RATE = 0.12;
+
+// Placeholder shipping rules; set SHIPPING_FEE and FREE_SHIPPING_MIN (in PHP)
+// to your real rates. FREE_SHIPPING_MIN=0 turns free shipping off.
+export const SHIPPING_FEE = numberFromEnv(process.env.SHIPPING_FEE, 150);
+
+export const FREE_SHIPPING_MIN = numberFromEnv(
+  process.env.FREE_SHIPPING_MIN,
+  3000,
+);
 
 export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
 
