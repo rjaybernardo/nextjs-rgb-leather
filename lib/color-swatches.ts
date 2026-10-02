@@ -1,4 +1,4 @@
-// Swatch colors for common leather and thread color names; anything else
+// Swatch colors for common color names; anything else
 // gets a neutral swatch (the name still shows beside it)
 const SWATCHES: Record<string, string> = {
   black: "#2A2522",

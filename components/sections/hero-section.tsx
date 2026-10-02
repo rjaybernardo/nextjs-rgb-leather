@@ -6,7 +6,7 @@ import { getReviewSummary } from "@/lib/actions/product.actions";
 import type { SectionData } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
-import { LeatherShape } from "./leather-shape";
+import { ImagePlaceholder } from "./image-placeholder";
 import { pillButton } from "./section-shell";
 
 const CALLOUT_POSITION: Record<SectionData<"hero">["callouts"][number]["position"], string> = {
@@ -103,7 +103,7 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
           {proof}
         </div>
 
-        <figure className="backdrop-leather flex aspect-[5/4.4] min-w-0 items-center justify-center">
+        <figure className="backdrop-media flex aspect-[5/4.4] min-w-0 items-center justify-center">
           {data.imageUrl ? (
             <Image
               src={data.imageUrl}
@@ -114,7 +114,7 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
               className="object-cover"
             />
           ) : (
-            <LeatherShape shape="bifold" tone="cognac" />
+            <ImagePlaceholder />
           )}
 
           {data.callouts.map((callout, index) => (

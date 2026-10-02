@@ -205,7 +205,7 @@ html.dark .upload-field .text-white {
 }
 
 /*
- * Storefront theme (the RGB Leathercrafts design): warm paper and stone
+ * Storefront theme: warm paper and stone
  * grounds, ink text and buttons, and the Site Studio accent (--brand) for
  * dark sections and badges. Scoped to .storefront so admin and Site Studio
  * keep the default theme.
@@ -296,7 +296,7 @@ html.dark .upload-field .text-white {
 }
 
 /* Product image ground with a soft contact shadow */
-@utility backdrop-leather {
+@utility backdrop-media {
   position: relative;
   background: var(--backdrop);
   border-radius: 6px;

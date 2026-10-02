@@ -1,9 +1,11 @@
 import type { SectionData, SectionType, SiteSettings } from "@/lib/site-config";
 
 /*
- * The RGB Leathercrafts storefront layout, ready to edit in Site Studio.
- * Wording follows the design, in pesos and for customers in the Philippines.
- * Photos are left empty so the drawings show until real ones are uploaded.
+ * The starter storefront layout, ready to edit in Site Studio. Every brand
+ * fills in its own wording and photos; the text below is placeholder copy
+ * that says what belongs in each spot. Photos are left empty so image
+ * placeholders show until real ones are uploaded. Prices are in pesos, for
+ * customers in the Philippines.
  */
 
 type PresetSection = { [T in SectionType]: { type: T; data: SectionData<T> } }[SectionType];
@@ -12,23 +14,23 @@ export const DESIGN_SECTIONS: PresetSection[] = [
   {
     type: "hero",
     data: {
-      heading: "Made by hand. *Built to be handed down.*",
+      heading: "Your headline goes here. *Make it memorable.*",
       subheading:
-        "Full-grain, vegetable-tanned leather, saddle-stitched one piece at a time. It darkens with use and we repair it free for life.",
+        "One or two sentences on what you sell and why customers love it. Keep it short and specific.",
       imageUrl: "",
-      ctaText: "Shop bestsellers",
+      ctaText: "Shop now",
       ctaUrl: "/search",
-      secondaryCtaText: "Design your own",
-      secondaryCtaUrl: "/#custom",
+      secondaryCtaText: "Learn more",
+      secondaryCtaUrl: "/#how-it-works",
       layout: "split",
       showRating: "yes",
-      trustPoints: [{ text: "Lifetime repairs" }, { text: "30-day free returns" }],
+      trustPoints: [{ text: "Trust point one" }, { text: "Trust point two" }],
       callouts: [
-        { text: "Hand saddle-stitched, 8 per inch", position: "top-left" },
-        { text: "Italian veg-tan, 1.2 mm", position: "middle-right" },
-        { text: "Edges burnished by hand", position: "bottom-left" },
+        { text: "Product detail one", position: "top-left" },
+        { text: "Product detail two", position: "middle-right" },
+        { text: "Product detail three", position: "bottom-left" },
       ],
-      caption: "The Bifold, Cognac",
+      caption: "Product name, variant",
     },
   },
   {
@@ -37,76 +39,63 @@ export const DESIGN_SECTIONS: PresetSection[] = [
       title: "",
       style: "strip",
       items: [
-        { icon: "Truck", title: "Ships in 48 hours", text: "Free shipping over ₱3,000" },
-        { icon: "Wrench", title: "Free repairs for life", text: "Restitch, re-edge, recondition" },
-        { icon: "RotateCcw", title: "30-day returns", text: "Even if it's been used" },
-        { icon: "Stamp", title: "Free monogram", text: "Up to 3 letters, heat-stamped" },
+        { icon: "Truck", title: "Nationwide shipping", text: "Delivered anywhere in the Philippines" },
+        { icon: "ShieldCheck", title: "Quality guarantee", text: "Describe your promise here" },
+        { icon: "RotateCcw", title: "Easy returns", text: "Returns within the return period" },
+        { icon: "WalletCards", title: "Flexible payment", text: "GCash, Maya, cards or cash on delivery" },
       ],
     },
   },
   {
     type: "product_tabs",
-    data: { title: "What do you *carry?*", count: 4, showAllTab: "no" },
+    data: { title: "Shop by *category*", count: 4, showAllTab: "no" },
   },
   {
     type: "craft",
     data: {
-      title: "What goes into *one card sleeve*",
-      intro: "Four hours of handwork, start to finish. Here is where the time goes.",
+      title: "What goes into *every product*",
+      intro: "A short intro on how your products are made or sourced, and why it matters.",
       imageUrl: "",
       points: [
-        {
-          title: "Full-grain, vegetable-tanned hide.",
-          text: "Tanned slowly with tree bark, so it darkens instead of cracking.",
-        },
-        {
-          title: "Saddle stitch, 8 stitches per inch.",
-          text: "Two needles, waxed linen. If one thread breaks, the seam holds.",
-        },
-        {
-          title: "Edges sanded, dyed and burnished.",
-          text: "Three coats, polished by hand until they shine like glass.",
-        },
-        {
-          title: "Cut with a 0.5 mm tolerance.",
-          text: "Holds four to six cards snug on day one, and still holds them in year ten.",
-        },
+        { title: "First quality point.", text: "Explain the material, process or detail that sets you apart." },
+        { title: "Second quality point.", text: "Keep each point to one or two sentences." },
+        { title: "Third quality point.", text: "Numbered markers on the photo match these points." },
+        { title: "Fourth quality point.", text: "Remove any points you don't need." },
       ],
-      comparisonTitle: "How it compares to a typical mall wallet",
-      ourLabel: "RGB Leathercrafts",
-      theirLabel: "Typical mall wallet",
+      comparisonTitle: "How we compare",
+      ourLabel: "Us",
+      theirLabel: "Typical alternative",
       rows: [
-        { label: "Leather", ours: "Full-grain, vegetable-tanned", theirs: "Corrected or bonded, chrome-tanned" },
-        { label: "Stitching", ours: "Hand saddle-stitch that won't unravel", theirs: "Machine lockstitch that unzips once cut" },
-        { label: "Edges", ours: "Burnished by hand", theirs: "Painted, cracks within a year" },
-        { label: "With age", ours: "Darkens into a patina", theirs: "Peels and frays" },
-        { label: "Repairs", ours: "Free, for life", theirs: "Replace it" },
+        { label: "Materials", ours: "What you use", theirs: "What others use" },
+        { label: "Quality", ours: "Your standard", theirs: "The usual standard" },
+        { label: "Durability", ours: "How long yours lasts", theirs: "How long theirs lasts" },
+        { label: "Support", ours: "Your after-sales promise", theirs: "Typical after-sales" },
       ],
     },
   },
   {
     type: "testimonials",
     data: {
-      title: "Reviewed after *years,* not days.",
+      title: "What our *customers* say",
       showSummary: "yes",
       items: [
         {
-          quote: "Three years in my back pocket. It's darker, softer, and somehow looks better than the day it arrived.",
-          name: "Miguel S.",
-          location: "Quezon City",
-          product: "Bifold, Cognac",
+          quote: "Replace this with a real review from a happy customer. Specific details make it believable.",
+          name: "Customer name",
+          location: "City",
+          product: "Product purchased",
         },
         {
-          quote: "A strap came loose after two years of daily commuting. Sent it in, got it back restitched in a week. Didn't pay a thing.",
-          name: "Andrea L.",
-          location: "Makati",
-          product: "Field Tote, Black",
+          quote: "A second customer review. Mention what they bought and what they liked about it.",
+          name: "Customer name",
+          location: "City",
+          product: "Product purchased",
         },
         {
-          quote: "Bought it as a wedding gift with our initials stamped inside. The box alone made my wife cry.",
-          name: "Paolo R.",
-          location: "Cebu City",
-          product: "Everyday Set, Oxblood",
+          quote: "A third customer review. Short quotes read best, two or three sentences at most.",
+          name: "Customer name",
+          location: "City",
+          product: "Product purchased",
         },
       ],
     },
@@ -114,49 +103,45 @@ export const DESIGN_SECTIONS: PresetSection[] = [
   {
     type: "spotlight",
     data: {
-      badge: "Save ₱1,500",
-      title: "The Everyday Set",
-      text: "Bifold wallet, card sleeve and key loop, cut from the same hide so they age together. Comes in a gift box with a care card.",
-      bullets: [
-        { text: "Free monogram on all three pieces" },
-        { text: "Gift box and handwritten note included" },
-        { text: "Available in Cognac, Oxblood and Black" },
-      ],
+      badge: "Badge text",
+      title: "Featured product",
+      text: "Describe the product or bundle you want to highlight and why it's worth buying.",
+      bullets: [{ text: "Key benefit one" }, { text: "Key benefit two" }, { text: "Key benefit three" }],
       imageUrl: "",
       productSlug: "",
       compareAtPrice: "",
-      ctaText: "Shop the set",
+      ctaText: "Shop now",
       ctaUrl: "/search",
     },
   },
   {
     type: "steps",
     data: {
-      title: "Made to order, *made for you.*",
-      intro: "Pick the leather, thread and initials. We cut and stitch it for you alone and ship within 10 working days.",
+      title: "How it *works*",
+      intro: "A short intro to the steps a customer follows, like ordering, customizing or booking.",
       steps: [
-        { title: "Choose a piece", text: "Start from any wallet, bag or accessory in the shop." },
-        { title: "Pick leather and thread", text: "Cognac, Oxblood, Black, Natural or Olive, with matching or contrast thread." },
-        { title: "Add your initials", text: "Up to three letters, heat-stamped or hand-tooled." },
-        { title: "We make it", text: "Photos from the bench while it's made. Ships in 10 working days." },
+        { title: "Step one", text: "Describe the first step." },
+        { title: "Step two", text: "Describe the second step." },
+        { title: "Step three", text: "Describe the third step." },
+        { title: "Step four", text: "Describe the last step." },
       ],
-      ctaText: "Start your design",
+      ctaText: "Get started",
       ctaUrl: "/search",
     },
   },
   {
     type: "gallery",
     data: {
-      title: "Carried for years",
-      linkText: "Share yours with #CarriedByRGB",
+      title: "Photo gallery",
+      linkText: "",
       linkUrl: "",
       images: [
-        { imageUrl: "", caption: "4 years" },
-        { imageUrl: "", caption: "2 years" },
-        { imageUrl: "", caption: "6 months" },
-        { imageUrl: "", caption: "5 years" },
-        { imageUrl: "", caption: "1 year" },
-        { imageUrl: "", caption: "3 years" },
+        { imageUrl: "", caption: "Caption" },
+        { imageUrl: "", caption: "Caption" },
+        { imageUrl: "", caption: "Caption" },
+        { imageUrl: "", caption: "Caption" },
+        { imageUrl: "", caption: "Caption" },
+        { imageUrl: "", caption: "Caption" },
       ],
     },
   },
@@ -164,38 +149,25 @@ export const DESIGN_SECTIONS: PresetSection[] = [
     type: "faq",
     data: {
       title: "Questions, *answered.*",
-      intro: "Can't find what you need? Message us and a real person from the workshop replies within a day.",
-      ctaText: "Message the workshop",
+      intro: "Can't find what you need? Message us and we'll reply within a day.",
+      ctaText: "Contact us",
       ctaUrl: "/pages/contact",
       items: [
         {
-          question: "How does vegetable-tanned leather age?",
-          answer:
-            "It darkens and softens with sunlight and handling. Light tones like Natural change the most; Black changes the least. Scratches buff out with your thumb.",
-        },
-        {
-          question: "What does the lifetime repair cover?",
-          answer:
-            "Restitching, edge refinishing, hardware replacement and reconditioning, for as long as you own the piece. You cover shipping to us; we cover the rest.",
-        },
-        {
-          question: "Can I return something I've used?",
-          answer:
-            "Yes. Carry it for up to 30 days. If it isn't right, send it back for a full refund. Monogrammed and made-to-order pieces are exchange only.",
-        },
-        {
           question: "How long does shipping take?",
-          answer:
-            "In-stock pieces ship within 48 hours: 1–3 days in Metro Manila, 3–7 days to the provinces. Made-to-order pieces ship within 10 working days. You'll get tracking by email.",
+          answer: "Replace this with your delivery times, e.g. 1–3 days in Metro Manila and 3–7 days to the provinces.",
         },
         {
           question: "How can I pay?",
           answer: "GCash, Maya, credit or debit card, QR Ph, or cash on delivery.",
         },
         {
-          question: "How do I care for it?",
-          answer:
-            "Wipe with a dry cloth. Condition every six months with the balm included in your box. Keep it away from long soaks.",
+          question: "Can I return an item?",
+          answer: "Replace this with your return policy.",
+        },
+        {
+          question: "Add your own question",
+          answer: "Add the answer here.",
         },
       ],
     },
@@ -204,10 +176,10 @@ export const DESIGN_SECTIONS: PresetSection[] = [
 
 // Settings the layout is designed around; other settings are left as they are
 export const DESIGN_SETTINGS = {
-  theme: { primaryColor: "#43191A", font: "schibsted", radius: "md" },
+  theme: { font: "schibsted", radius: "md" },
   announcement: {
     enabled: true,
-    text: "Free shipping on orders over ₱3,000",
-    secondaryText: "Free monogramming this month",
+    text: "Your announcement goes here",
+    secondaryText: "",
   },
 } satisfies { theme: Partial<SiteSettings["theme"]>; announcement: Partial<SiteSettings["announcement"]> };

@@ -214,10 +214,10 @@ export default function SectionsEditor({ sections }: { sections: Section[] }) {
       <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
         <LayoutTemplate className="size-5 text-muted-foreground" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <div className="font-medium">Use the RGB Leathercrafts layout</div>
+          <div className="font-medium">Use the starter layout</div>
           <p className="text-sm text-muted-foreground">
-            Adds the full store design (hero, shop tabs, craft, reviews, set, made to order,
-            gallery, FAQ) with ready-to-edit wording, and sets the cordovan color and Schibsted
+            Adds the full store design (hero, shop tabs, details, reviews, spotlight, steps,
+            gallery, FAQ) with placeholder text and image spots to fill in, and sets the Schibsted
             Grotesk font. Your current sections are hidden, not deleted.
           </p>
         </div>

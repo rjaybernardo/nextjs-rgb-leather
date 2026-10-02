@@ -6,7 +6,7 @@ import { getProductBySlug } from "@/lib/actions/product.actions";
 import type { SectionData } from "@/lib/site-config";
 import { formatCurrency } from "@/lib/utils";
 
-import { LeatherShape } from "./leather-shape";
+import { ImagePlaceholder } from "./image-placeholder";
 import { Section, SectionTitle, pillButton } from "./section-shell";
 import SpotlightAddButton from "./spotlight-add-button";
 
@@ -22,15 +22,11 @@ const SpotlightSection = async ({ data }: { data: SectionData<"spotlight"> }) =>
   return (
     <Section tone="stone">
       <div className="grid items-center gap-[clamp(32px,5vw,80px)] lg:grid-cols-2">
-        <div className="backdrop-leather flex aspect-[5/4] min-w-0 items-center justify-center gap-[6%] px-[8%]">
+        <div className="backdrop-media flex aspect-[5/4] min-w-0 items-center justify-center">
           {image ? (
             <Image src={image} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           ) : (
-            <>
-              <LeatherShape shape="card" tone="oxblood" className="h-[40%] w-[36%]" />
-              <LeatherShape shape="card" tone="oxblood" className="h-[28%] w-[26%]" />
-              <LeatherShape shape="strap" tone="oxblood" className="h-[34%] w-[10%]" />
-            </>
+            <ImagePlaceholder />
           )}
 
           {data.badge && (

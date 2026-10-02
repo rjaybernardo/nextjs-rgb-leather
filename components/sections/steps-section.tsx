@@ -6,7 +6,7 @@ import { Section, SectionTitle, pillButton } from "./section-shell";
 
 const StepsSection = ({ data }: { data: SectionData<"steps"> }) => {
   return (
-    <Section id="custom" innerClassName="flex flex-col gap-12">
+    <Section id="how-it-works" innerClassName="flex flex-col gap-12">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <SectionTitle text={data.title} className="max-w-[16ch]" />
         {data.intro && <p className="max-w-[40ch] text-muted-foreground">{data.intro}</p>}

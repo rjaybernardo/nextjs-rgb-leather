@@ -81,7 +81,7 @@ const TaxonomyList = ({ kind, title, items }: TaxonomyListProps) => {
           id={`new-${kind}`}
           value={newName}
           onChange={(event) => setNewName(event.target.value)}
-          placeholder={kind === "category" ? "e.g. Wallets" : "e.g. RGB Leather"}
+          placeholder={kind === "category" ? "e.g. Bags" : "e.g. Your brand"}
           maxLength={60}
           disabled={isPending}
         />

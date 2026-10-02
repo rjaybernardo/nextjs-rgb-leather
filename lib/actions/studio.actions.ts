@@ -85,7 +85,7 @@ export async function updateSiteSettings(changes: Record<string, unknown>): Prom
 
 // ------------------------------------------------------------- sections
 
-// Adds the RGB Leathercrafts layout to the top of the home page and applies its
+// Adds the starter layout to the top of the home page and applies its
 // theme. Existing sections are hidden, not deleted, so nothing is lost.
 export async function applyDesignPreset(): Promise<Result> {
   try {
@@ -118,13 +118,13 @@ export async function applyDesignPreset(): Promise<Result> {
       actor: session,
       action: "site.preset.apply",
       entityType: "site",
-      details: { preset: "rgb-leathercrafts", sections: sections.length },
+      details: { preset: "starter", sections: sections.length },
     });
 
     invalidateSite();
     revalidatePath("/studio", "layout");
 
-    return ok("Layout added. Your earlier sections are hidden below it.");
+    return ok("Starter layout added. Your earlier sections are hidden below it.");
   } catch (error) {
     return fail(error);
   }

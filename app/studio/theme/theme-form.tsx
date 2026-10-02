@@ -170,8 +170,8 @@ export default function ThemeForm({ theme }: { theme: Theme }) {
         <h2 className="text-sm font-medium">Preview</h2>
 
         <div className="space-y-4 border p-6" style={{ borderRadius: radius }}>
-          <p className="text-lg font-semibold">Leather bifold wallet</p>
-          <p className="text-sm text-muted-foreground">Full-grain leather, hand-stitched.</p>
+          <p className="text-lg font-semibold">Sample product</p>
+          <p className="text-sm text-muted-foreground">A short product description.</p>
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-9 items-center rounded-full bg-foreground px-4 text-sm font-medium text-background">
@@ -191,7 +191,7 @@ export default function ThemeForm({ theme }: { theme: Theme }) {
             style={{ backgroundColor: values.primaryColor, color: foreground, borderRadius: radius }}
           >
             <p className="font-semibold">What goes into one card sleeve</p>
-            <p className="text-sm opacity-75">Craft and newsletter bands use the accent color.</p>
+            <p className="text-sm opacity-75">Dark bands use the accent color.</p>
           </div>
         </div>
       </section>

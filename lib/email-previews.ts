@@ -20,8 +20,8 @@ const sampleOrder = (paymentMethod: string) => ({
   taxPrice: 353.36,
   totalPrice: 3298,
   orderitems: [
-    { name: "Classic Bifold Wallet", qty: 1, price: 1299, image: "/images/sample-products/p1-1.jpg" },
-    { name: "Full-Grain Leather Belt", qty: 1, price: 1999, image: "/images/sample-products/p2-1.jpg" },
+    { name: "Sample Product A", qty: 1, price: 1299, image: "/images/sample-products/p1-1.jpg" },
+    { name: "Sample Product B", qty: 1, price: 1999, image: "/images/sample-products/p2-1.jpg" },
   ],
   address: {
     fullName: "Juan dela Cruz",

@@ -58,7 +58,7 @@ export const RADIUS_OPTIONS = [
 
 // The accent: dark sections, badges and highlights
 export const THEME_PRESETS = [
-  { name: "Cordovan", color: "#43191A" },
+  { name: "Burgundy", color: "#43191A" },
   { name: "Saddle", color: "#8A4B22" },
   { name: "Espresso", color: "#4A2C21" },
   { name: "Charcoal", color: "#1F2937" },
@@ -123,10 +123,10 @@ export const siteSettingsSchema = z.object({
 export type SiteSettings = z.infer<typeof siteSettingsSchema>;
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  siteName: process.env.NEXT_PUBLIC_APP_NAME || "RGB Leather",
-  tagline: "Handcrafted leather goods",
+  siteName: process.env.NEXT_PUBLIC_APP_NAME || "Your Store",
+  tagline: "Your tagline goes here",
   description:
-    process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Handcrafted leather goods.",
+    process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Shop online and pay with GCash, Maya, card or cash on delivery.",
   logoUrl: "",
   ogImageUrl: "",
   contact: { email: "", phone: "", address: "" },
@@ -139,16 +139,16 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   },
   announcement: {
     enabled: true,
-    text: "Free shipping on orders over ₱3,000",
-    secondaryText: "Free monogramming this month",
+    text: "Your announcement goes here",
+    secondaryText: "",
     linkText: "Shop now",
     linkUrl: "/search",
   },
   footer: {
-    about: "Handmade leather goods, cut and stitched one at a time.",
+    about: "A short line about your store goes here.",
     copyright: "",
-    newsletterTitle: "Take 10% off *your first piece.*",
-    newsletterText: "Plus first access to small-batch leathers before they sell out. One email a month.",
+    newsletterTitle: "Join our *newsletter.*",
+    newsletterText: "New arrivals and member deals, straight to your inbox.",
   },
 };
 
@@ -328,7 +328,7 @@ export const sectionSchemas = {
       .string()
       .trim()
       .max(120)
-      .refine((value) => value === "" || /^[a-z0-9-]+$/.test(value), "Use the product's address, like the-bifold"),
+      .refine((value) => value === "" || /^[a-z0-9-]+$/.test(value), "Use the product's address, like classic-tote"),
     compareAtPrice: optionalText(20).refine(
       (value) => value === "" || /^\d+(\.\d{1,2})?$/.test(value),
       "Enter an amount like 4500",
@@ -372,10 +372,10 @@ const inThirtyDays = () => {
 
 export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   hero: () => ({
-    heading: "Made by hand. *Built to be handed down.*",
-    subheading: "Full-grain, vegetable-tanned leather, saddle-stitched one piece at a time.",
+    heading: "Your headline goes here. *Make it memorable.*",
+    subheading: "One or two sentences on what you sell and why customers love it.",
     imageUrl: "",
-    ctaText: "Shop bestsellers",
+    ctaText: "Shop now",
     ctaUrl: "/search",
     secondaryCtaText: "",
     secondaryCtaUrl: "",
@@ -390,9 +390,9 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   category_grid: () => ({ title: "Shop by category", subtitle: "" }),
   deal: () => ({
     title: "Deals of the Month",
-    description: "Limited-time prices on selected pieces.",
+    description: "Limited-time prices on selected products.",
     endsAt: inThirtyDays(),
-    imageUrl: "/images/promo.jpg",
+    imageUrl: "",
     ctaText: "View products",
     ctaUrl: "/search",
   }),
@@ -408,7 +408,7 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   }),
   story: () => ({
     title: "Our story",
-    body: "Tell customers who you are, where your leather comes from and how each piece is made.",
+    body: "Tell customers who you are, what you make or sell, and what makes your store different.",
     imageUrl: "",
     imageSide: "right",
     ctaText: "",
@@ -431,17 +431,17 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   }),
   newsletter: () => ({
     title: "Get new arrivals first",
-    text: "New pieces and member deals, a few times a month.",
+    text: "New arrivals and member deals, a few times a month.",
     buttonText: "Subscribe",
   }),
-  product_tabs: () => ({ title: "What do you *carry?*", count: 4, showAllTab: "no" }),
+  product_tabs: () => ({ title: "Shop by *category*", count: 4, showAllTab: "no" }),
   craft: () => ({
-    title: "What goes into *one piece*",
-    intro: "Hours of handwork, start to finish. Here is where the time goes.",
+    title: "What goes into *every product*",
+    intro: "A short intro on how your products are made or sourced.",
     imageUrl: "",
     points: [
-      { title: "Full-grain, vegetable-tanned hide.", text: "Tanned slowly with tree bark, so it darkens instead of cracking." },
-      { title: "Saddle-stitched by hand.", text: "Two needles, waxed thread. If one stitch breaks, the seam holds." },
+      { title: "First quality point.", text: "Explain the material, process or detail that sets you apart." },
+      { title: "Second quality point.", text: "Keep each point to one or two sentences." },
     ],
     comparisonTitle: "",
     ourLabel: "",
@@ -450,7 +450,7 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   }),
   spotlight: () => ({
     badge: "",
-    title: "Featured piece",
+    title: "Featured product",
     text: "Tell customers why this one is worth it.",
     bullets: [],
     imageUrl: "",
@@ -460,18 +460,26 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
     ctaUrl: "/search",
   }),
   steps: () => ({
-    title: "Made to order, *made for you.*",
+    title: "How it *works*",
     intro: "",
     steps: [
-      { title: "Choose a piece", text: "Start from any wallet, bag or accessory in the shop." },
-      { title: "Pick leather and thread", text: "" },
-      { title: "Add your initials", text: "Up to three letters, heat-stamped." },
-      { title: "We make it", text: "Ships within 10 working days." },
+      { title: "Step one", text: "Describe the first step." },
+      { title: "Step two", text: "Describe the second step." },
+      { title: "Step three", text: "Describe the last step." },
     ],
     ctaText: "",
     ctaUrl: "",
   }),
-  gallery: () => ({ title: "Carried for years", linkText: "", linkUrl: "", images: [] }),
+  gallery: () => ({
+    title: "Photo gallery",
+    linkText: "",
+    linkUrl: "",
+    images: [
+      { imageUrl: "", caption: "" },
+      { imageUrl: "", caption: "" },
+      { imageUrl: "", caption: "" },
+    ],
+  }),
 };
 
 export const SECTION_LABELS: Record<SectionType, { name: string; hint: string }> = {
@@ -486,7 +494,7 @@ export const SECTION_LABELS: Record<SectionType, { name: string; hint: string }>
   faq: { name: "FAQ", hint: "Common questions and answers" },
   newsletter: { name: "Newsletter sign-up", hint: "Collect customer emails" },
   product_tabs: { name: "Shop by category tabs", hint: "Product grid with a tab per category" },
-  craft: { name: "Craft and comparison", hint: "How it's made, with an optional comparison table" },
+  craft: { name: "Details and comparison", hint: "How it's made or sourced, with an optional comparison table" },
   spotlight: { name: "Product spotlight", hint: "Feature one product or set" },
   steps: { name: "Steps", hint: "Numbered steps, like made to order" },
   gallery: { name: "Photo gallery", hint: "A row of photos with captions" },
@@ -518,7 +526,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
     { key: "heading", label: "Heading", type: "text", max: 120, help: ACCENT_HELP },
     { key: "subheading", label: "Subheading", type: "textarea", max: 240 },
     { key: "layout", label: "Layout", type: "select", options: [{ value: "split", label: "Text beside the photo" }, { value: "overlay", label: "Text over the photo" }] },
-    { key: "imageUrl", label: "Photo", type: "image", help: "A product or workshop photo. Square-ish for “beside”, wide for “over”." },
+    { key: "imageUrl", label: "Photo", type: "image", help: "A product or lifestyle photo. Square-ish for “beside”, wide for “over”." },
     { key: "ctaText", label: "Main button text", type: "text", max: 40 },
     { key: "ctaUrl", label: "Main button link", type: "url", help: "A page like /search or a full link" },
     { key: "secondaryCtaText", label: "Second button text (optional)", type: "text", max: 40 },
@@ -657,7 +665,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
     },
   ],
   spotlight: [
-    { key: "badge", label: "Badge (optional)", type: "text", max: 30, help: "e.g. Save ₱1,500" },
+    { key: "badge", label: "Badge (optional)", type: "text", max: 30, help: "e.g. Save ₱500" },
     { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
     { key: "text", label: "Text", type: "textarea", max: 300 },
     {
@@ -668,7 +676,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
       fields: [{ key: "text", label: "Text", type: "text", max: 80 }],
     },
     { key: "imageUrl", label: "Photo", type: "image", help: "Leave empty to use the product's photo." },
-    { key: "productSlug", label: "Product address (optional)", type: "text", max: 120, help: "The end of its link, e.g. the-bifold. Shows its price and links to it." },
+    { key: "productSlug", label: "Product address (optional)", type: "text", max: 120, help: "The end of its link, e.g. classic-tote. Shows its price and links to it." },
     { key: "compareAtPrice", label: "Compare-at price (₱, optional)", type: "text", max: 20, help: "Shown struck through next to the price." },
     { key: "ctaText", label: "Button text", type: "text", max: 40 },
     { key: "ctaUrl", label: "Button link (if no product)", type: "url" },
@@ -691,7 +699,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
   ],
   gallery: [
     { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
-    { key: "linkText", label: "Link text (optional)", type: "text", max: 60, help: "e.g. Share yours with #CarriedByRGB" },
+    { key: "linkText", label: "Link text (optional)", type: "text", max: 60, help: "e.g. Share yours with #YourBrand" },
     { key: "linkUrl", label: "Link", type: "url" },
     {
       key: "images",

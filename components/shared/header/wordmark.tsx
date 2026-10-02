@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /*
  * The uploaded logo, or the site name as a wordmark: the first word bold
- * ("RGB") and the rest in the italic serif ("Leathercrafts"), as in the design.
+ * and the rest in the italic serif ("Your *Store*").
  */
 export default async function Wordmark({ size = "md", className }: { size?: "md" | "lg"; className?: string }) {
   const { siteName, logoUrl } = await getSiteSettings();

@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { SectionData } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
-import { LeatherShape } from "./leather-shape";
+import { ImagePlaceholder } from "./image-placeholder";
 import { Section, SectionTitle, pillButton } from "./section-shell";
 
 const StorySection = ({ data }: { data: SectionData<"story"> }) => {
@@ -31,11 +31,11 @@ const StorySection = ({ data }: { data: SectionData<"story"> }) => {
           )}
         </div>
 
-        <div className="backdrop-leather flex aspect-[5/4] min-w-0 items-center justify-center">
+        <div className="backdrop-media flex aspect-[5/4] min-w-0 items-center justify-center">
           {data.imageUrl ? (
             <Image src={data.imageUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           ) : (
-            <LeatherShape shape="tote" tone="brown" />
+            <ImagePlaceholder />
           )}
         </div>
       </div>

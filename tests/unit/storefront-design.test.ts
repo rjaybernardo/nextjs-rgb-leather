@@ -32,7 +32,7 @@ describe("AccentText", () => {
 });
 
 describe("color swatches", () => {
-  it("knows common leather colors, case-insensitively", () => {
+  it("knows common color names, case-insensitively", () => {
     expect(swatchColor("Cognac")).toBe("#8A4A22");
     expect(swatchColor(" oxblood ")).toBe("#5B1F1B");
   });
@@ -64,7 +64,7 @@ describe("home sections", () => {
   });
 });
 
-describe("RGB Leathercrafts layout preset", () => {
+describe("starter layout preset", () => {
   it.each(DESIGN_SECTIONS.map((section) => [section.type, section] as const))(
     "%s section is valid",
     (type, section) => {
@@ -74,6 +74,17 @@ describe("RGB Leathercrafts layout preset", () => {
 
   it("uses pesos, not dollars", () => {
     expect(JSON.stringify(DESIGN_SECTIONS)).not.toContain("$");
+  });
+
+  it("is brand-neutral, so any store can reuse it", () => {
+    const copy = JSON.stringify([
+      DESIGN_SECTIONS,
+      DESIGN_SETTINGS,
+      DEFAULT_SITE_SETTINGS,
+      SECTION_TYPES.map((type) => SECTION_DEFAULTS[type]()),
+    ]);
+
+    expect(copy).not.toMatch(/rgb|leather|cordovan/i);
   });
 
   it("produces valid site settings", () => {

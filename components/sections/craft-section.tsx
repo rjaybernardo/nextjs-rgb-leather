@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import type { SectionData } from "@/lib/site-config";
 
-import { LeatherShape } from "./leather-shape";
+import { ImagePlaceholder } from "./image-placeholder";
 import { Section, SectionTitle } from "./section-shell";
 
 // Where the numbered markers sit on the photo, in the order of the points
@@ -22,7 +22,7 @@ const CraftSection = ({ data }: { data: SectionData<"craft"> }) => {
           {data.imageUrl ? (
             <Image src={data.imageUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           ) : (
-            <LeatherShape shape="sleeve" tone="tan" />
+            <ImagePlaceholder />
           )}
 
           {data.points.slice(0, MARKERS.length).map((point, index) => (

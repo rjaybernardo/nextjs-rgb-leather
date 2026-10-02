@@ -16,7 +16,7 @@ export default async function StudioThemePage() {
       <div className="space-y-1">
         <h1 className="h2-bold">Theme</h1>
         <p className="text-muted-foreground">
-          The accent color fills the craft and newsletter bands, the bag count and link
+          The accent color fills the dark bands (details and newsletter), the bag count and link
           highlights. Text on it switches between white and black automatically so it stays
           readable. Buttons stay ink-dark, as in the store design.
         </p>

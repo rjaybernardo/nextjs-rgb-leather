@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
+import { ImagePlaceholder } from "@/components/sections/image-placeholder";
 import Rating from "@/components/shared/product/rating";
 import WishlistButton from "@/components/shared/product/wishlist-button";
 import { toast } from "@/components/ui/toast";
@@ -97,7 +98,7 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
 
   return (
     <article className="flex min-w-0 flex-col gap-3.5">
-      <div className="backdrop-leather relative aspect-[4/5]">
+      <div className="backdrop-media relative aspect-[4/5]">
         <Link href={href} className="absolute inset-0 block" tabIndex={-1} aria-hidden="true">
           {image ? (
             <Image
@@ -108,8 +109,8 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
               className="object-cover transition-transform duration-500 hover:scale-[1.03] motion-reduce:transition-none"
             />
           ) : (
-            <span className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              No photo yet
+            <span className="flex h-full items-center justify-center">
+              <ImagePlaceholder label="" />
             </span>
           )}
         </Link>

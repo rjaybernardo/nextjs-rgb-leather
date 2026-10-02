@@ -104,7 +104,7 @@ const ReviewForm = ({ productId, review }: ReviewFormProps) => {
           maxLength={2000}
           rows={4}
           defaultValue={review?.description}
-          placeholder="How's the leather, stitching and fit?"
+          placeholder="How's the quality, fit and value?"
         />
       </div>
 

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ImagePlaceholder } from "@/components/sections/image-placeholder";
 import { Section, pillButton } from "@/components/sections/section-shell";
 import AccentText from "@/components/shared/accent-text";
 
@@ -102,11 +103,13 @@ const DealCountdown = ({
         )}
       </div>
 
-      {imageUrl && (
-        <div className="backdrop-leather aspect-[5/4] min-w-0">
+      <div className="backdrop-media flex aspect-[5/4] min-w-0 items-center justify-center">
+        {imageUrl ? (
           <Image src={imageUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
-        </div>
-      )}
+        ) : (
+          <ImagePlaceholder />
+        )}
+      </div>
       </div>
     </Section>
   );

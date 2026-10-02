@@ -13,7 +13,7 @@ import Wordmark from "./wordmark";
 const iconClass =
   "inline-flex size-11 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-// Storefront header, following the RGB Leathercrafts design
+// Storefront header: announcement, wordmark, category links and icon actions
 const Header = async () => {
   const categories = await getAllCategories();
 

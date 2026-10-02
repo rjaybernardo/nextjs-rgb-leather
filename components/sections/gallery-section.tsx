@@ -4,13 +4,12 @@ import Link from "next/link";
 import AccentText from "@/components/shared/accent-text";
 import type { SectionData } from "@/lib/site-config";
 
-import { LEATHER_TONES, LeatherShape, type LeatherShapeKind } from "./leather-shape";
+import { ImagePlaceholder } from "./image-placeholder";
 import { Section } from "./section-shell";
 
-const PLACEHOLDER_SHAPES: LeatherShapeKind[] = ["card", "tote", "sleeve", "tote", "strap", "card"];
 const PLACEHOLDER_GROUNDS = ["#CFC6B8", "#B9AD9B", "#D9D1C3", "#C7BBA9", "#DCD5C9", "#BFB4A3"];
 
-// Customer photos, each with a short caption like "4 years"
+// A row of photos, each with an optional short caption
 const GallerySection = ({ data }: { data: SectionData<"gallery"> }) => {
   if (data.images.length === 0) return null;
 
@@ -31,22 +30,19 @@ const GallerySection = ({ data }: { data: SectionData<"gallery"> }) => {
         {data.images.map((item, index) => (
           <li
             key={`${item.imageUrl}-${index}`}
-            className="backdrop-leather flex aspect-square items-center justify-center"
+            className="backdrop-media flex aspect-square items-center justify-center"
             style={item.imageUrl ? undefined : { background: PLACEHOLDER_GROUNDS[index % PLACEHOLDER_GROUNDS.length] }}
           >
             {item.imageUrl ? (
               <Image
                 src={item.imageUrl}
-                alt={item.caption ? `Carried for ${item.caption}` : ""}
+                alt={item.caption}
                 fill
                 sizes="(min-width: 1024px) 16vw, 33vw"
                 className="object-cover"
               />
             ) : (
-              <LeatherShape
-                shape={PLACEHOLDER_SHAPES[index % PLACEHOLDER_SHAPES.length]}
-                tone={LEATHER_TONES[(index + 2) % LEATHER_TONES.length]}
-              />
+              <ImagePlaceholder label="" />
             )}
 
             {item.caption && (

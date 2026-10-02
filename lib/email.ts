@@ -34,7 +34,7 @@ const getResend = () => {
  * email to the server log (handy in development).
  *
  * EMAIL_FROM must use a domain verified in Resend, e.g.
- * "RGB Leather <orders@yourdomain.ph>". Resend's test sender
+ * "Your Store <orders@yourdomain.ph>". Resend's test sender
  * (onboarding@resend.dev) only delivers to your own Resend account email.
  *
  * Never throws: a failed email must not fail the order or sign-up, so

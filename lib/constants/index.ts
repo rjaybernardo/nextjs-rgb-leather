@@ -1,8 +1,8 @@
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "RGB Leather";
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Your Store";
 
 export const APP_DESCRIPTION =
   process.env.NEXT_PUBLIC_APP_DESCRIPTION ||
-  "Handcrafted leather goods.";
+  "Shop online and pay with GCash, Maya, card or cash on delivery.";
 
 export const SERVER_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
