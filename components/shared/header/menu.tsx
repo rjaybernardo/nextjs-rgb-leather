@@ -1,4 +1,4 @@
-import { EllipsisVertical, ShoppingCart } from "lucide-react";
+import { EllipsisVertical, ShoppingCart, Store } from "lucide-react";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 
 import ModeToggle from "./mode-toggle";
+import SearchBox from "./search-box";
 import UserButton from "./user-button";
 
 const Menu = () => {
@@ -54,6 +55,19 @@ const Menu = () => {
             <SheetDescription>Navigation menu</SheetDescription>
 
             <div className="mt-4 flex w-full flex-col gap-2">
+              <SearchBox />
+
+              <Link
+                href="/search"
+                className={buttonVariants({
+                  variant: "ghost",
+                  className: "w-full justify-start",
+                })}
+              >
+                <Store />
+                <span>Shop all products</span>
+              </Link>
+
               <ModeToggle />
 
               <Link

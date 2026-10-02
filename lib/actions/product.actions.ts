@@ -57,38 +57,82 @@ export async function getProductById(productId: string) {
   };
 }
 
+export type ProductSort = "newest" | "lowest" | "highest" | "rating";
+
+// Parses a "min-max" price filter, e.g. "1000-5000" or "5000-"
+const parsePriceRange = (price?: string) => {
+  if (!price || price === "all") return undefined;
+
+  const [min, max] = price.split("-").map((value) => Number(value));
+
+  const range: Prisma.DecimalFilter = {};
+
+  if (Number.isFinite(min) && min > 0) range.gte = min;
+  if (Number.isFinite(max) && max > 0) range.lte = max;
+
+  return Object.keys(range).length > 0 ? range : undefined;
+};
+
+const PRODUCT_ORDER_BY: Record<
+  ProductSort,
+  Prisma.ProductOrderByWithRelationInput[]
+> = {
+  newest: [{ createdAt: "desc" }],
+  lowest: [{ price: "asc" }, { createdAt: "desc" }],
+  highest: [{ price: "desc" }, { createdAt: "desc" }],
+  rating: [{ rating: "desc" }, { numReviews: "desc" }],
+};
+
 export async function getAllProducts({
   query,
   limit = PAGE_SIZE,
   page,
   category,
+  price,
+  rating,
+  sort = "newest",
 }: {
   query: string;
   limit?: number;
   page: number;
   category?: string;
+  price?: string;
+  rating?: string;
+  sort?: string;
 }) {
+  const priceRange = parsePriceRange(price);
+  const minRating = Number(rating);
+
   const where: Prisma.ProductWhereInput = {
     ...(query && query !== "all"
       ? {
-          name: {
-            contains: query,
-            mode: "insensitive",
-          },
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { brand: { contains: query, mode: "insensitive" } },
+            { category: { contains: query, mode: "insensitive" } },
+          ],
         }
       : {}),
     ...(category && category !== "all" ? { category } : {}),
+    ...(priceRange ? { price: priceRange } : {}),
+    ...(Number.isFinite(minRating) && minRating > 0
+      ? { rating: { gte: minRating } }
+      : {}),
   };
+
+  const orderBy =
+    PRODUCT_ORDER_BY[sort as ProductSort] ?? PRODUCT_ORDER_BY.newest;
 
   const [data, dataCount] = await Promise.all([
     prisma.product.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     }),
     prisma.product.count({ where }),
   ]);
+
   const plainData = convertToPlainObject(data);
 
   return {
@@ -98,7 +142,47 @@ export async function getAllProducts({
       rating: Number(product.rating),
     })),
     totalPages: Math.ceil(dataCount / limit),
+    totalCount: dataCount,
   };
+}
+
+// Categories with how many products each has, for navigation and filters
+export async function getAllCategories() {
+  const groups = await prisma.product.groupBy({
+    by: ["category"],
+    _count: true,
+    orderBy: {
+      category: "asc",
+    },
+  });
+
+  return groups.map((group) => ({
+    category: group.category,
+    count: group._count,
+  }));
+}
+
+// Featured products that have a banner image, for the home carousel
+export async function getFeaturedProducts() {
+  const data = await prisma.product.findMany({
+    where: {
+      isFeatured: true,
+      banner: {
+        not: null,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 5,
+  });
+
+  return convertToPlainObject(data).map((product) => ({
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    banner: product.banner as string,
+  }));
 }
 
 export async function deleteProduct(id: string) {

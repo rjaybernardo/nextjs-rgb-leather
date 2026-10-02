@@ -144,6 +144,9 @@ model Review {
   createdAt          DateTime @default(now()) @db.Timestamp(6)
   product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
 }
 
 enum OrderStatus {

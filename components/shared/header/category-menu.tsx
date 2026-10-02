@@ -1,0 +1,61 @@
+import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { buttonVariants } from "@/components/ui/button";
+import { getAllCategories } from "@/lib/actions/product.actions";
+
+const CategoryMenu = async () => {
+  const categories = await getAllCategories();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className={buttonVariants({ variant: "ghost" })}
+          />
+        }
+      >
+        Shop
+        <ChevronDown aria-hidden="true" />
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent className="w-56" align="start">
+        <DropdownMenuGroup>
+          <DropdownMenuItem render={<Link href="/search" className="w-full" />}>
+            All products
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        {categories.length > 0 && <DropdownMenuSeparator />}
+
+        <DropdownMenuGroup>
+          {categories.map(({ category }) => (
+            <DropdownMenuItem
+              key={category}
+              render={
+                <Link
+                  href={`/search?${new URLSearchParams({ category })}`}
+                  className="w-full"
+                />
+              }
+            >
+              {category}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export default CategoryMenu;

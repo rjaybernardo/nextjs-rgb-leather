@@ -10,9 +10,9 @@ const ProductPrice = ({ value, className }: ProductPriceProps) => {
 
   return (
     <p className={cn("text-2xl", className)}>
-      <span className="text-xs align-super">$</span>
+      <span className="text-xs align-super">₱</span>
 
-      {integerPart}
+      {Number(integerPart).toLocaleString("en-PH")}
 
       <span className="text-xs align-super">.{decimalPart}</span>
     </p>

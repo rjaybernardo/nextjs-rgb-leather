@@ -3,6 +3,9 @@ import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import ProductPrice from "@/components/shared/product/product-price";
+import Rating from "@/components/shared/product/rating";
+import { Badge } from "@/components/ui/badge";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import type { Product } from "@/types";
 
 const ProductCard = ({ product }: { product: Product }) => {
@@ -32,14 +35,25 @@ const ProductCard = ({ product }: { product: Product }) => {
       </CardHeader>
 
       <CardContent className="grid gap-4 p-4">
-        <div className="text-xs text-muted-foreground">{product.brand}</div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-xs text-muted-foreground">{product.brand}</div>
+
+          {product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD && (
+            <Badge variant="secondary">Only {product.stock} left</Badge>
+          )}
+        </div>
 
         <Link href={`/product/${product.slug}`}>
           <h2 className="text-sm font-medium">{product.name}</h2>
         </Link>
 
         <div className="flex-between gap-4">
-          <p>{product.rating} stars</p>
+          <div className="flex items-center gap-1">
+            <Rating value={product.rating} size="sm" />
+            <span className="text-xs text-muted-foreground">
+              ({product.numReviews})
+            </span>
+          </div>
 
           {product.stock > 0 ? (
             <ProductPrice value={product.price} />

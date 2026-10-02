@@ -11,9 +11,10 @@ import type { Cart, CartItem } from "@/types";
 type AddToCartProps = {
   cart?: Cart;
   item: Omit<CartItem, "cartId">;
+  stock: number;
 };
 
-const AddToCart = ({ cart, item }: AddToCartProps) => {
+const AddToCart = ({ cart, item, stock }: AddToCartProps) => {
   const [isPending, startTransition] = useTransition();
 
   const existItem = cart?.items.find(
@@ -67,8 +68,9 @@ const AddToCart = ({ cart, item }: AddToCartProps) => {
           variant="outline"
           size="icon"
           onClick={handleAddToCart}
-          disabled={isPending}
+          disabled={isPending || existItem.qty >= stock}
           aria-label={`Increase quantity of ${item.name}`}
+          title={existItem.qty >= stock ? "No more in stock" : undefined}
         >
           {isPending ? <Loader className="animate-spin" /> : <Plus />}
         </Button>

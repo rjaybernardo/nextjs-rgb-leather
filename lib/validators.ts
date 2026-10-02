@@ -242,3 +242,26 @@ export const resetPasswordSchema = z
     error: "Passwords don't match",
     path: ["confirmPassword"],
   });
+
+// Reviews
+export const insertReviewSchema = z.object({
+  productId: z.string().min(1, "Product is required"),
+
+  rating: z.coerce
+    .number()
+    .int()
+    .min(1, "Choose a rating from 1 to 5 stars")
+    .max(5, "Choose a rating from 1 to 5 stars"),
+
+  title: z
+    .string()
+    .trim()
+    .min(3, "Title must be at least 3 characters")
+    .max(120, "Title must be at most 120 characters"),
+
+  description: z
+    .string()
+    .trim()
+    .min(3, "Review must be at least 3 characters")
+    .max(2000, "Review must be at most 2000 characters"),
+});

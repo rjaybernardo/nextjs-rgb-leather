@@ -85,3 +85,6 @@ export const productDefaultValues = {
 export const USER_ROLES = process.env.USER_ROLES
   ? process.env.USER_ROLES.split(",").map((role) => role.trim())
   : ["admin", "user"];
+
+// Show an "Only N left" badge at or below this stock level
+export const LOW_STOCK_THRESHOLD = 5;
