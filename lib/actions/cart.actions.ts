@@ -45,13 +45,17 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Validate submitted item
-    const item = cartItemSchema.parse(data);
+    // Validate submitted item; only productId and qty are trusted
+    const { productId, qty } = cartItemSchema.parse(data);
+
+    if (qty < 1) {
+      throw new Error("Quantity must be at least 1");
+    }
 
     // Find product
     const product = await prisma.product.findUnique({
       where: {
-        id: item.productId,
+        id: productId,
       },
     });
 
@@ -59,18 +63,32 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       throw new Error("Product not found");
     }
 
+    // Build the item from the database so the client can't set the price
+    const item: CartItem = {
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      image: product.images[0] ?? "",
+      price: Number(product.price),
+      qty,
+    };
+
     // Get existing cart
     const cart = await getMyCart();
 
+    const existItem = cart?.items.find(
+      (cartItem) => cartItem.productId === item.productId,
+    );
+
+    if ((existItem?.qty ?? 0) + item.qty > product.stock) {
+      throw new Error("Not enough stock");
+    }
+
     // If cart exists, update it
     if (cart) {
-      const existItem = cart.items.find(
-        (cartItem) => cartItem.productId === item.productId,
-      );
-
       if (existItem) {
-        // Increase quantity of existing item
-        existItem.qty += item.qty;
+        // Increase quantity and refresh details of existing item
+        Object.assign(existItem, { ...item, qty: existItem.qty + item.qty });
       } else {
         // Add new item
         cart.items.push(item);

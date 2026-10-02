@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { auth, signIn, signOut } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
+import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 
@@ -209,10 +210,24 @@ export async function signOutUser() {
   });
 }
 
+// Users may only read their own record; admins may read any
 export async function getUserById(userId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("User is not authenticated");
+  }
+
+  if (session.user.id !== userId && session.user.role !== "admin") {
+    throw new Error("User not found");
+  }
+
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
+    },
+    omit: {
+      password: true,
     },
   });
 
@@ -373,6 +388,8 @@ export async function getAllUsers({
   page: number;
   query: string;
 }) {
+  await requireAdmin();
+
   const queryFilter: Prisma.UserWhereInput =
     query && query !== "all"
       ? {
@@ -392,6 +409,9 @@ export async function getAllUsers({
     },
     take: limit,
     skip: (page - 1) * limit,
+    omit: {
+      password: true,
+    },
   });
 
   const dataCount = await prisma.user.count({
@@ -409,6 +429,8 @@ export async function getAllUsers({
 // Delete user by ID
 export async function deleteUser(id: string) {
   try {
+    await assertAdmin();
+
     await prisma.user.delete({
       where: {
         id,
@@ -432,13 +454,17 @@ export async function deleteUser(id: string) {
 // Update user
 export async function updateUser(user: z.infer<typeof updateUserSchema>) {
   try {
+    await assertAdmin();
+
+    const { id, name, role } = updateUserSchema.parse(user);
+
     await prisma.user.update({
       where: {
-        id: user.id,
+        id,
       },
       data: {
-        name: user.name,
-        role: user.role,
+        name,
+        role,
       },
     });
 

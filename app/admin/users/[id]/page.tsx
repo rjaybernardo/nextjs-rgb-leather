@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getUserById } from "@/lib/actions/user.actions";
+import { requireAdmin } from "@/lib/auth-guard";
 
 import UpdateUserForm from "./update-user-form";
 
@@ -13,11 +14,11 @@ const UpdateUserPage = async (props: {
     id: string;
   }>;
 }) => {
+  await requireAdmin();
+
   const { id } = await props.params;
 
   const user = await getUserById(id);
-
-  console.log(user);
 
   return (
     <div className="mx-auto max-w-lg space-y-8">

@@ -1,4 +1,4 @@
-import { PAYMENT_METHODS } from "@/lib/constants";
+import { PAYMENT_METHODS, USER_ROLES } from "@/lib/constants";
 import { z } from "zod";
 
 const currency = z
@@ -205,5 +205,8 @@ export const updateProfileSchema = z.object({
 export const updateUserSchema = updateProfileSchema.extend({
   id: z.string().min(1, "Id is required"),
   name: z.string().min(3, "Name must be at least 3 characters"),
-  role: z.string().min(1, "Role is required"),
+  role: z
+    .string()
+    .min(1, "Role is required")
+    .refine((value) => USER_ROLES.includes(value), "Invalid role"),
 });

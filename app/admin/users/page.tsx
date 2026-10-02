@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { deleteUser, getAllUsers } from "@/lib/actions/user.actions";
+import { requireAdmin } from "@/lib/auth-guard";
 import { formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -27,6 +28,8 @@ type AdminUsersPageProps = {
 };
 
 const AdminUsersPage = async ({ searchParams }: AdminUsersPageProps) => {
+  await requireAdmin();
+
   const { page, query: searchText = "" } = await searchParams;
 
   const currentPage = Number(page) || 1;

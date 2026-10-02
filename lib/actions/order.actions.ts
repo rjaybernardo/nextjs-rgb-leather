@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
-import { requireAdmin } from "@/lib/auth-guard";
+import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
@@ -127,8 +127,14 @@ export async function createOrder(): Promise<CreateOrderResult> {
   }
 }
 
-// Get order by ID
+// Get order by ID (owner or admin only)
 export async function getOrderById(orderId: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return undefined;
+  }
+
   const order = await prisma.order.findUnique({
     where: {
       id: orderId,
@@ -144,7 +150,10 @@ export async function getOrderById(orderId: string) {
     },
   });
 
-  if (!order) {
+  if (
+    !order ||
+    (order.userId !== session.user.id && session.user.role !== "admin")
+  ) {
     return undefined;
   }
 
@@ -208,6 +217,8 @@ export async function getAllOrders({
   page: number;
   query: string;
 }) {
+  await requireAdmin();
+
   const queryFilter: Prisma.OrderWhereInput =
     query && query !== "all"
       ? {
@@ -259,7 +270,7 @@ export async function getAllOrders({
 // Delete Order
 export async function deleteOrder(id: string) {
   try {
-    await requireAdmin();
+    await assertAdmin();
 
     await prisma.order.delete({
       where: {
@@ -311,7 +322,7 @@ async function updateOrderToPaid({ orderId }: { orderId: string }) {
 // Update Order To Paid By COD
 export async function updateOrderToPaidByCOD(orderId: string) {
   try {
-    await requireAdmin();
+    await assertAdmin();
 
     await updateOrderToPaid({
       orderId,
@@ -335,7 +346,7 @@ export async function updateOrderToPaidByCOD(orderId: string) {
 // Update Order To Delivered
 export async function deliverOrder(orderId: string) {
   try {
-    await requireAdmin();
+    await assertAdmin();
 
     const order = await prisma.order.findUnique({
       where: {
@@ -390,6 +401,8 @@ type SalesDataType = {
 
 // Get sales data and order summary
 export async function getOrderSummary() {
+  await requireAdmin();
+
   const ordersCount = await prisma.order.count();
   const productsCount = await prisma.product.count();
   const usersCount = await prisma.user.count();
