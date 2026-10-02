@@ -8,26 +8,29 @@ datasource db {
 }
 
 model Product {
-  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
-  slug        String          @unique(map: "product_slug_idx")
-  categoryId  String          @db.Uuid
+  slug        String           @unique(map: "product_slug_idx")
+  categoryId  String           @db.Uuid
   images      String[]
-  brandId     String          @db.Uuid
+  brandId     String           @db.Uuid
   description String
   stock       Int
-  price       Decimal         @default(0) @db.Decimal(12, 2)
-  rating      Decimal         @default(0) @db.Decimal(3, 2)
-  numReviews  Int             @default(0)
-  isFeatured  Boolean         @default(false)
+  price       Decimal          @default(0) @db.Decimal(12, 2)
+  rating      Decimal          @default(0) @db.Decimal(3, 2)
+  numReviews  Int              @default(0)
+  isFeatured  Boolean          @default(false)
   banner      String?
-  createdAt   DateTime        @default(now()) @db.Timestamp(6)
+  // [{ "name": "Color", "values": ["Black", "Brown"] }, ...]; empty = no variants
+  options     Json             @default("[]") @db.Json
+  createdAt   DateTime         @default(now()) @db.Timestamp(6)
   OrderItem   OrderItem[]
   Review      Review[]
   wishlist    WishlistItem[]
   stockMoves  StockMovement[]
-  category    Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  brand       Brand           @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  variants    ProductVariant[]
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brand       Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
   @@index([categoryId])
   @@index([brandId])
@@ -136,17 +139,22 @@ model Order {
 }
 
 model OrderItem {
-  orderId   String  @db.Uuid
-  productId String  @db.Uuid
-  qty       Int
-  price     Decimal @db.Decimal(12, 2)
-  name      String
-  slug      String
-  image     String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId      String          @db.Uuid
+  productId    String          @db.Uuid
+  qty          Int
+  price        Decimal         @db.Decimal(12, 2)
+  name         String
+  slug         String
+  image        String
+  // Snapshot of the variant ("Brown / M"); variantId is cleared if it is deleted
+  variantId    String?         @db.Uuid
+  variantTitle String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@id([orderId, productId], map: "orderitems_orderId_productId_pk")
+  @@index([orderId])
 }
 
 model Review {
@@ -247,15 +255,16 @@ enum StockReason {
 
 // Every stock change, so admins can see why a count moved
 model StockMovement {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId  String      @db.Uuid
-  change     Int
-  stockAfter Int
-  reason     StockReason
-  orderId    String?     @db.Uuid
-  actorEmail String?
-  createdAt  DateTime    @default(now()) @db.Timestamp(6)
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId    String      @db.Uuid
+  change       Int
+  stockAfter   Int
+  reason       StockReason
+  variantTitle String?
+  orderId      String?     @db.Uuid
+  actorEmail   String?
+  createdAt    DateTime    @default(now()) @db.Timestamp(6)
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, createdAt])
 }
@@ -357,4 +366,24 @@ model CouponRedemption {
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([couponId, userId])
+}
+
+// A purchasable combination of a product's options, e.g. Brown / M
+model ProductVariant {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String      @db.Uuid
+  // { "Color": "Brown", "Size": "M" }
+  options    Json        @db.Json
+  title      String
+  sku        String?     @unique
+  // null = the product's price
+  price      Decimal?    @db.Decimal(12, 2)
+  stock      Int         @default(0)
+  image      String?
+  position   Int         @default(0)
+  createdAt  DateTime    @default(now()) @db.Timestamp(6)
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
 }

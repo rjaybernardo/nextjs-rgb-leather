@@ -1,4 +1,11 @@
-import { cleanUpE2eCoupons, cleanUpE2eData, createTestDb, E2E_COUPON_CODE } from "./db";
+import {
+  cleanUpE2eCoupons,
+  cleanUpE2eData,
+  cleanUpE2eProducts,
+  createTestDb,
+  E2E_COUPON_CODE,
+  E2E_VARIANT_PRODUCT_SLUG,
+} from "./db";
 
 export default async function globalSetup() {
   const db = createTestDb();
@@ -7,6 +14,7 @@ export default async function globalSetup() {
     // Leftovers from an interrupted run
     await cleanUpE2eData(db);
     await cleanUpE2eCoupons(db);
+    await cleanUpE2eProducts(db);
 
     // 10% off, once per customer, for the checkout test
     await db.coupon.create({
@@ -34,11 +42,33 @@ export default async function globalSetup() {
       },
     });
 
+    // A plain product for the variants test to add options to
+    const [category, brand] = await Promise.all([
+      db.category.findFirstOrThrow({ select: { id: true } }),
+      db.brand.findFirstOrThrow({ select: { id: true } }),
+    ]);
+
+    await db.product.create({
+      data: {
+        name: "E2E Variant Belt",
+        slug: E2E_VARIANT_PRODUCT_SLUG,
+        categoryId: category.id,
+        brandId: brand.id,
+        description: "Created by the e2e tests",
+        images: ["/images/sample-products/p1-1.jpg"],
+        price: 1000,
+        stock: 0,
+      },
+    });
+
     // A product with stock for the test to buy
     const product = await db.product.findFirst({
       where: {
         stock: {
           gte: 2,
+        },
+        slug: {
+          not: { startsWith: "e2e-" },
         },
       },
       orderBy: {

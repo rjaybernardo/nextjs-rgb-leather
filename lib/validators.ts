@@ -98,7 +98,17 @@ export const cartItemSchema = z.object({
     .refine((value) => /^\d+(\.\d{2})?$/.test(value.toFixed(2)), {
       error: "Price must have exactly two decimal places (e.g., 49.99)",
     }),
+
+  // Set for products with variants, e.g. "Brown / M"
+  variantId: z.string().optional(),
+  variantTitle: z.string().optional(),
 });
+
+// The same product in two variants is two cart lines
+export const sameCartLine = (
+  a: { productId: string; variantId?: string },
+  b: { productId: string; variantId?: string },
+) => a.productId === b.productId && (a.variantId ?? null) === (b.variantId ?? null);
 
 export const insertCartSchema = z.object({
   items: z.array(cartItemSchema),
@@ -201,6 +211,9 @@ export const insertOrderSchema = z.object({
 
 // Order Item
 export const insertOrderItemSchema = z.object({
+  variantId: z.string().nullish(),
+  variantTitle: z.string().nullish(),
+
   productId: z.string().min(1, {
     error: "Product is required",
   }),

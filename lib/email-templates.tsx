@@ -23,6 +23,7 @@ type OrderSummary = {
     qty: number;
     price: number | string;
     image?: string | null;
+    variantTitle?: string | null;
   }[];
   // Optional breakdown and address for the HTML email
   itemsPrice?: number | string;
@@ -43,7 +44,7 @@ const toHtml = (element: ReactElement) => render(element);
 
 const emailItems = (order: OrderSummary) =>
   order.orderitems.map((item) => ({
-    name: item.name,
+    name: item.variantTitle ? `${item.name} (${item.variantTitle})` : item.name,
     qty: item.qty,
     price: Number(item.price),
     imageUrl: item.image ? absoluteUrl(item.image) : null,
@@ -60,7 +61,7 @@ const emailTotals = (order: OrderSummary) => ({
 
 const itemLines = (order: OrderSummary) =>
   order.orderitems
-    .map((item) => `- ${item.name} × ${item.qty}: ${formatCurrency(Number(item.price) * item.qty)}`)
+    .map((item) => `- ${item.name}${item.variantTitle ? ` (${item.variantTitle})` : ""} × ${item.qty}: ${formatCurrency(Number(item.price) * item.qty)}`)
     .join("\n");
 
 export const orderPlacedEmail = async (to: string, order: OrderSummary): Promise<Email> => {

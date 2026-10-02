@@ -12,7 +12,7 @@ import { getShippingSettings } from "@/lib/store-settings";
 import { convertToPlainObject, formatCurrency } from "@/lib/utils";
 import { assertRateLimit } from "@/lib/rate-limit";
 import { formatError } from "@/lib/utils/server";
-import { cartItemSchema } from "@/lib/validators";
+import { cartItemSchema, sameCartLine } from "@/lib/validators";
 import type { CartItem } from "@/types";
 
 // Add item to cart
@@ -52,8 +52,8 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Validate submitted item; only productId and qty are trusted
-    const { productId, qty } = cartItemSchema.parse(data);
+    // Validate submitted item; only productId, variantId and qty are trusted
+    const { productId, variantId, qty } = cartItemSchema.parse(data);
 
     if (qty < 1) {
       throw new Error("Quantity must be at least 1");
@@ -70,25 +70,37 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       throw new Error("Product not found");
     }
 
+    // Products with variants are bought as a specific variant
+    const variantCount = await prisma.productVariant.count({ where: { productId: product.id } });
+
+    const variant = variantId
+      ? await prisma.productVariant.findFirst({ where: { id: variantId, productId: product.id } })
+      : null;
+
+    if (variantCount > 0 && !variant) {
+      throw new Error("Choose an option first");
+    }
+
+    const available = variant ? variant.stock : product.stock;
+
     // Build the item from the database so the client can't set the price
     const item: CartItem = {
       productId: product.id,
       name: product.name,
       slug: product.slug,
-      image: product.images[0] ?? "",
-      price: Number(product.price),
+      image: variant?.image || product.images[0] || "",
+      price: variant?.price !== null && variant?.price !== undefined ? Number(variant.price) : Number(product.price),
       qty,
+      ...(variant ? { variantId: variant.id, variantTitle: variant.title } : {}),
     };
 
     // Get existing cart
     const cart = await getMyCart();
 
-    const existItem = cart?.items.find(
-      (cartItem) => cartItem.productId === item.productId,
-    );
+    const existItem = cart?.items.find((cartItem) => sameCartLine(cartItem, item));
 
-    if ((existItem?.qty ?? 0) + item.qty > product.stock) {
-      throw new Error("Not enough stock");
+    if ((existItem?.qty ?? 0) + item.qty > available) {
+      throw new Error(available === 0 ? "Out of stock" : `Only ${available} left`);
     }
 
     // If cart exists, update it
@@ -144,7 +156,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
 }
 
 // Remove one quantity of an item from the cart
-export async function removeItemFromCart(productId: string) {
+export async function removeItemFromCart(productId: string, variantId?: string) {
   try {
     // Get session cart ID
     const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -172,7 +184,8 @@ export async function removeItemFromCart(productId: string) {
     }
 
     // Check if cart has item
-    const exist = cart.items.find((item) => item.productId === productId);
+    const line = { productId, variantId };
+    const exist = cart.items.find((item) => sameCartLine(item, line));
 
     if (!exist) {
       throw new Error("Item not found");
@@ -180,7 +193,7 @@ export async function removeItemFromCart(productId: string) {
 
     // If only one remains, remove the item
     if (exist.qty === 1) {
-      cart.items = cart.items.filter((item) => item.productId !== productId);
+      cart.items = cart.items.filter((item) => !sameCartLine(item, line));
     } else {
       // Otherwise decrease quantity by one
       exist.qty -= 1;
@@ -205,8 +218,8 @@ export async function removeItemFromCart(productId: string) {
 
     return {
       success: true,
-      message: `${product.name} ${
-        cart.items.some((item) => item.productId === productId)
+      message: `${product.name}${exist.variantTitle ? ` (${exist.variantTitle})` : ""} ${
+        cart.items.some((item) => sameCartLine(item, line))
           ? "updated in"
           : "removed from"
       } cart successfully`,

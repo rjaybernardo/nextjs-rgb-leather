@@ -117,27 +117,42 @@ export async function createOrder(): Promise<CreateOrderResult> {
       products.map((product) => [product.id, product]),
     );
 
+    const variantIds = cartItems
+      .map((item) => item.variantId)
+      .filter((id): id is string => Boolean(id));
+
+    const variants = variantIds.length
+      ? await prisma.productVariant.findMany({ where: { id: { in: variantIds } } })
+      : [];
+
+    const variantsById = new Map(variants.map((variant) => [variant.id, variant]));
+
+    // Gone: the product was deleted, or the chosen variant was removed
     const unavailable = cartItems.find(
-      (item) => !productsById.has(item.productId),
+      (item) =>
+        !productsById.has(item.productId) ||
+        (item.variantId !== undefined && !variantsById.has(item.variantId)),
     );
 
     if (unavailable) {
       return {
         success: false,
-        message: `${unavailable.name} is no longer available. Remove it from your cart to continue.`,
+        message: `${unavailable.name}${unavailable.variantTitle ? ` (${unavailable.variantTitle})` : ""} is no longer available. Remove it from your cart to continue.`,
         redirectTo: "/cart",
       };
     }
 
     const items: CartItem[] = cartItems.map((item) => {
       const product = productsById.get(item.productId)!;
+      const variant = item.variantId ? variantsById.get(item.variantId) : undefined;
 
       return {
         ...item,
         name: product.name,
         slug: product.slug,
-        image: product.images[0] ?? item.image,
-        price: Number(product.price),
+        image: variant?.image || product.images[0] || item.image,
+        price: variant?.price != null ? Number(variant.price) : Number(product.price),
+        ...(variant ? { variantTitle: variant.title } : {}),
       };
     });
 
@@ -227,8 +242,19 @@ export async function createOrder(): Promise<CreateOrderResult> {
         });
       }
 
-      // Decrement stock; the gte guard prevents overselling under concurrency
+      // Decrement stock; the gte guards prevent overselling under concurrency
       for (const item of items) {
+        if (item.variantId) {
+          const { count: variantCount } = await tx.productVariant.updateMany({
+            where: { id: item.variantId, stock: { gte: item.qty } },
+            data: { stock: { decrement: item.qty } },
+          });
+
+          if (variantCount === 0) {
+            throw new Error(`Not enough stock for ${item.name} (${item.variantTitle})`);
+          }
+        }
+
         const { count } = await tx.product.updateMany({
           where: {
             id: item.productId,
@@ -253,6 +279,7 @@ export async function createOrder(): Promise<CreateOrderResult> {
           reason: "ORDER_PLACED",
           orderId: insertedOrder.id,
           actorEmail: user.email,
+          variantTitle: item.variantTitle,
         });
       }
 
@@ -265,6 +292,8 @@ export async function createOrder(): Promise<CreateOrderResult> {
           name: item.name,
           slug: item.slug,
           image: item.image,
+          variantId: item.variantId ?? null,
+          variantTitle: item.variantTitle ?? null,
         })),
       });
 
@@ -489,6 +518,14 @@ export async function deleteOrder(id: string) {
         (STOCK_HELD_STATUSES as readonly string[]).includes(order.status)
       ) {
         for (const item of order.orderitems) {
+          // The variant may have been deleted since; then only the product total
+          if (item.variantId) {
+            await tx.productVariant.updateMany({
+              where: { id: item.variantId },
+              data: { stock: { increment: item.qty } },
+            });
+          }
+
           await tx.product.update({
             where: {
               id: item.productId,
@@ -506,6 +543,7 @@ export async function deleteOrder(id: string) {
             reason: "ORDER_DELETED",
             orderId: order.id,
             actorEmail: session.user.email,
+            variantTitle: item.variantTitle,
           });
         }
       }
@@ -583,6 +621,14 @@ export async function cancelOrder(orderId: string) {
       }
 
       for (const item of order.orderitems) {
+        // The variant may have been deleted since; then only the product total
+        if (item.variantId) {
+          await tx.productVariant.updateMany({
+            where: { id: item.variantId },
+            data: { stock: { increment: item.qty } },
+          });
+        }
+
         await tx.product.update({
           where: {
             id: item.productId,
@@ -600,6 +646,7 @@ export async function cancelOrder(orderId: string) {
           reason: "ORDER_CANCELLED",
           orderId: order.id,
           actorEmail: session.user.email,
+          variantTitle: item.variantTitle,
         });
       }
 
@@ -1056,7 +1103,7 @@ export async function startPayMongoCheckout(orderId: string) {
       ];
     } else {
       lineItems = order.orderitems.map((item) => ({
-        name: item.name,
+        name: item.variantTitle ? `${item.name} (${item.variantTitle})` : item.name,
         amount: toCentavos(Number(item.price)),
         currency: "PHP" as const,
         quantity: item.qty,

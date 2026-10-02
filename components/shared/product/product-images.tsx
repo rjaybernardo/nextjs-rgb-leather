@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,17 @@ type ProductImagesProps = {
 
 const ProductImages = ({ images }: ProductImagesProps) => {
   const [current, setCurrent] = useState(0);
+
+  // Choosing a variant with its own photo shows that photo
+  useEffect(() => {
+    const showVariantImage = (event: Event) => {
+      const index = images.indexOf((event as CustomEvent<string>).detail);
+      if (index >= 0) setCurrent(index);
+    };
+
+    window.addEventListener("product:variant-image", showVariantImage);
+    return () => window.removeEventListener("product:variant-image", showVariantImage);
+  }, [images]);
 
   if (images.length === 0) {
     return null;

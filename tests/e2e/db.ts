@@ -88,6 +88,23 @@ export async function cleanUpE2eData(db: PrismaClient) {
   return users.length;
 }
 
+// Throwaway product for the variants test (variants cascade with it)
+export const E2E_VARIANT_PRODUCT_SLUG = "e2e-variant-belt";
+
+export async function cleanUpE2eProducts(db: PrismaClient) {
+  const products = await db.product.findMany({
+    where: { slug: { startsWith: "e2e-" } },
+    select: { id: true },
+  });
+
+  if (products.length === 0) return;
+
+  const ids = products.map((product) => product.id);
+
+  await db.auditLog.deleteMany({ where: { entityId: { in: ids } } });
+  await db.product.deleteMany({ where: { id: { in: ids } } });
+}
+
 // Test discount codes; their redemptions go with the test orders above
 export const E2E_COUPON_CODE = "E2E10";
 

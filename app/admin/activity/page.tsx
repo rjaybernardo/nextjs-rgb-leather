@@ -27,6 +27,7 @@ const ACTION_LABELS: Record<string, string> = {
   "product.create": "Created product",
   "product.update": "Updated product",
   "product.delete": "Deleted product",
+  "product.variants.update": "Updated product variants",
   "user.update": "Updated user",
   "user.role.change": "Changed user role",
   "user.delete": "Deleted user",

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { OrderStatus } from "@/lib/generated/prisma/enums";
+import type { ProductOption, VariantView } from "@/lib/variant-utils";
 
 import {
   cartItemSchema,
@@ -21,6 +22,9 @@ export type Product = z.infer<typeof insertProductSchema> & {
   category: string;
   categorySlug: string;
   brand: string;
+  // Empty when the product has no variants
+  options: ProductOption[];
+  variants: VariantView[];
 };
 
 export type Cart = z.infer<typeof insertCartSchema>;

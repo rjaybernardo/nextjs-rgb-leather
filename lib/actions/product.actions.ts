@@ -11,7 +11,8 @@ import { formatError } from "@/lib/utils/server";
 import { insertProductSchema, updateProductSchema } from "@/lib/validators";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { recordAudit } from "@/lib/audit";
-import { recordStockMovement } from "@/lib/stock";
+import { recordStockMovement, syncProductFromVariants } from "@/lib/stock";
+import { variantTitle, variantsInputSchema, type VariantsInput } from "@/lib/variant-utils";
 import { productInclude, toProduct } from "@/lib/product-mapper";
 import {
   CATALOG_REVALIDATE_SECONDS,
@@ -342,6 +343,14 @@ export async function updateProduct(data: z.input<typeof updateProductSchema>) {
 
     const { id, ...updateData } = product;
 
+    // Products with variants get price and stock from their variants
+    const variantCount = await prisma.productVariant.count({ where: { productId: id } });
+
+    if (variantCount > 0) {
+      updateData.price = Number(productExists.price);
+      updateData.stock = productExists.stock;
+    }
+
     const stockChange = updateData.stock - productExists.stock;
 
     await prisma.$transaction(async (tx) => {
@@ -400,6 +409,147 @@ export async function updateProduct(data: z.input<typeof updateProductSchema>) {
     return {
       success: true,
       message: "Product updated successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+// Admin: an editable copy of a product's options and variants
+export async function getProductVariantsForAdmin(productId: string) {
+  await requireAdmin();
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: {
+      price: true,
+      images: true,
+      options: true,
+      variants: { orderBy: { position: "asc" } },
+    },
+  });
+
+  if (!product) return null;
+
+  return {
+    basePrice: Number(product.price),
+    images: product.images,
+    options: product.variants.length > 0 ? (product.options as { name: string; values: string[] }[]) : [],
+    variants: product.variants.map((variant) => ({
+      id: variant.id,
+      title: variant.title,
+      options: variant.options as Record<string, string>,
+      sku: variant.sku ?? "",
+      price: String(variant.price === null ? Number(product.price) : Number(variant.price)),
+      stock: String(variant.stock),
+      image: variant.image ?? "",
+    })),
+  };
+}
+
+// Admin: replace a product's options and variants in one go
+export async function saveProductVariants(productId: string, input: VariantsInput) {
+  try {
+    const session = await assertAdmin();
+    const data = variantsInputSchema.parse(input);
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, slug: true, name: true, images: true },
+    });
+
+    if (!product) {
+      throw new Error("Product not found");
+    }
+
+    const allowedImages = new Set(product.images);
+
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.productVariant.findMany({ where: { productId } });
+      const existingById = new Map(existing.map((variant) => [variant.id, variant]));
+      const keptIds = new Set<string>();
+      const stockChanges: { title: string; change: number }[] = [];
+
+      for (const [position, variant] of data.variants.entries()) {
+        const title = variantTitle(data.options, variant.options);
+        const previous = variant.id ? existingById.get(variant.id) : undefined;
+        const fields = {
+          options: variant.options,
+          title,
+          sku: variant.sku,
+          price: variant.price,
+          stock: variant.stock,
+          image: variant.image && allowedImages.has(variant.image) ? variant.image : null,
+          position,
+        };
+
+        if (previous) {
+          keptIds.add(previous.id);
+          await tx.productVariant.update({ where: { id: previous.id }, data: fields });
+        } else {
+          await tx.productVariant.create({ data: { ...fields, productId } });
+        }
+
+        const change = variant.stock - (previous?.stock ?? 0);
+
+        if (change !== 0) stockChanges.push({ title, change });
+      }
+
+      // Variants that were removed; past orders keep their snapshot
+      const removed = existing.filter((variant) => !keptIds.has(variant.id));
+
+      if (removed.length > 0) {
+        await tx.productVariant.deleteMany({ where: { id: { in: removed.map((variant) => variant.id) } } });
+
+        for (const variant of removed) {
+          if (variant.stock > 0) stockChanges.push({ title: variant.title, change: -variant.stock });
+        }
+      }
+
+      await tx.product.update({
+        where: { id: productId },
+        data: { options: data.variants.length > 0 ? data.options : [] },
+      });
+
+      await syncProductFromVariants(tx, productId);
+
+      // Logged after syncing, so "left" shows the product's final total
+      for (const { title, change } of stockChanges) {
+        await recordStockMovement(tx, {
+          productId,
+          change,
+          reason: "ADMIN_ADJUSTMENT",
+          actorEmail: session.user.email,
+          variantTitle: title,
+        });
+      }
+    });
+
+    await recordAudit({
+      actor: session,
+      action: "product.variants.update",
+      entityType: "product",
+      entityId: productId,
+      details: {
+        name: product.name,
+        options: data.options.map((option) => `${option.name}: ${option.values.join(", ")}`),
+        variants: data.variants.length,
+      },
+    });
+
+    invalidateCatalog();
+    revalidatePath(`/product/${product.slug}`);
+    revalidatePath(`/admin/products/${productId}`);
+
+    return {
+      success: true,
+      message:
+        data.variants.length > 0
+          ? `${data.variants.length} variant${data.variants.length === 1 ? "" : "s"} saved`
+          : "Variants removed",
     };
   } catch (error) {
     return {

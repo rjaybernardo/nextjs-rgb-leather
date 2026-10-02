@@ -39,7 +39,12 @@ const StockHistory = async ({ productId }: { productId: string }) => {
                 {movement.change}
               </span>
 
-              <span className="min-w-36">{REASON_LABELS[movement.reason]}</span>
+              <span className="min-w-36">
+                {REASON_LABELS[movement.reason]}
+                {movement.variantTitle && (
+                  <span className="text-muted-foreground"> · {movement.variantTitle}</span>
+                )}
+              </span>
 
               <span className="text-muted-foreground tabular-nums">
                 → {movement.stockAfter} left

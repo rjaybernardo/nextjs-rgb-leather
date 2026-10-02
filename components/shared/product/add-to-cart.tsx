@@ -6,6 +6,7 @@ import { Loader, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { addItemToCart, removeItemFromCart } from "@/lib/actions/cart.actions";
+import { sameCartLine } from "@/lib/validators";
 import type { Cart, CartItem } from "@/types";
 
 type AddToCartProps = {
@@ -17,9 +18,7 @@ type AddToCartProps = {
 const AddToCart = ({ cart, item, stock }: AddToCartProps) => {
   const [isPending, startTransition] = useTransition();
 
-  const existItem = cart?.items.find(
-    (cartItem) => cartItem.productId === item.productId,
-  );
+  const existItem = cart?.items.find((cartItem) => sameCartLine(cartItem, item));
 
   const handleAddToCart = () => {
     startTransition(async () => {
@@ -35,7 +34,7 @@ const AddToCart = ({ cart, item, stock }: AddToCartProps) => {
 
   const handleRemoveFromCart = () => {
     startTransition(async () => {
-      const res = await removeItemFromCart(item.productId);
+      const res = await removeItemFromCart(item.productId, item.variantId);
 
       toast.add({
         title: res.success ? "Cart updated" : "Unable to update cart",

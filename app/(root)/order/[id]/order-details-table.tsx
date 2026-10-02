@@ -332,7 +332,7 @@ const OrderDetailsTable = ({
 
                 <TableBody>
                   {orderitems.map((item) => (
-                    <TableRow key={`${item.productId}-${item.slug}`}>
+                    <TableRow key={`${item.productId}-${item.variantId ?? ""}`}>
                       <TableCell>
                         <Link
                           href={`/product/${item.slug}`}
@@ -345,7 +345,14 @@ const OrderDetailsTable = ({
                             height={50}
                           />
 
-                          <span className="px-2">{item.name}</span>
+                          <span className="px-2">
+                          {item.name}
+                          {item.variantTitle && (
+                            <span className="block text-xs text-muted-foreground">
+                              {item.variantTitle}
+                            </span>
+                          )}
+                        </span>
                         </Link>
                       </TableCell>
 

@@ -31,6 +31,8 @@ type ProductFormProps = {
   productId?: string;
   categories: Option[];
   brands: Option[];
+  // Price and stock then come from the variants
+  hasVariants?: boolean;
 };
 
 type ProductFormValues = {
@@ -52,6 +54,7 @@ export default function ProductForm({
   productId,
   categories,
   brands,
+  hasVariants = false,
 }: ProductFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -380,8 +383,15 @@ export default function ProductForm({
                   placeholder="Enter product price"
                   inputMode="decimal"
                   aria-invalid={!!errors.price}
+                  readOnly={hasVariants}
                   {...register("price")}
                 />
+
+                {hasVariants && (
+                  <p className="text-xs text-muted-foreground">
+                    Lowest variant price. Change prices under Variants below.
+                  </p>
+                )}
 
                 <FieldError errors={[errors.price]} />
               </Field>
@@ -394,10 +404,17 @@ export default function ProductForm({
                   type="number"
                   placeholder="Enter product stock"
                   aria-invalid={!!errors.stock}
+                  readOnly={hasVariants}
                   {...register("stock", {
                     valueAsNumber: true,
                   })}
                 />
+
+                {hasVariants && (
+                  <p className="text-xs text-muted-foreground">
+                    Total of all variants. Change stock under Variants below.
+                  </p>
+                )}
 
                 <FieldError errors={[errors.stock]} />
               </Field>

@@ -8,7 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getProductBySlug } from "@/lib/actions/product.actions";
 import ProductImages from "@/components/shared/product/product-images";
 import CartButton from "@/components/shared/product/cart-button";
+import VariantPicker from "@/components/shared/product/variant-picker";
 import WishlistButton from "@/components/shared/product/wishlist-button";
+import { getMyCart } from "@/lib/actions/cart.actions";
 import { getMyWishlistIds } from "@/lib/actions/wishlist.actions";
 import Rating from "@/components/shared/product/rating";
 import { LOW_STOCK_THRESHOLD, SERVER_URL } from "@/lib/constants";
@@ -65,9 +67,10 @@ export async function generateMetadata({
 const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
   const { slug } = await params;
 
-  const [product, wishlistIds] = await Promise.all([
+  const [product, wishlistIds, cart] = await Promise.all([
     getProduct(slug),
     getMyWishlistIds(),
+    getMyCart(),
   ]);
 
   if (!product) {
@@ -160,6 +163,16 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
         <div className="md:col-span-1">
           <Card>
             <CardContent className="p-4">
+              {product.variants.length > 0 ? (
+                <VariantPicker
+                  product={product}
+                  options={product.options}
+                  variants={product.variants}
+                  cart={cart}
+                  lowStockThreshold={LOW_STOCK_THRESHOLD}
+                />
+              ) : (
+                <>
               <div className="mb-2 flex justify-between">
                 <div>Price</div>
 
@@ -194,6 +207,8 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
                     }}
                   />
                 </div>
+              )}
+                </>
               )}
 
               <div className="mt-2 flex">

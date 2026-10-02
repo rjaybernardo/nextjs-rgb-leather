@@ -103,7 +103,7 @@ const PlaceOrderPage = async () => {
 
                 <TableBody>
                   {cart.items.map((item) => (
-                    <TableRow key={item.productId}>
+                    <TableRow key={`${item.productId}-${item.variantId ?? ""}`}>
                       <TableCell>
                         <Link
                           href={`/product/${item.slug}`}
@@ -117,7 +117,14 @@ const PlaceOrderPage = async () => {
                             className="rounded"
                           />
 
-                          <span className="px-2">{item.name}</span>
+                          <span className="px-2">
+                          {item.name}
+                          {item.variantTitle && (
+                            <span className="block text-xs text-muted-foreground">
+                              {item.variantTitle}
+                            </span>
+                          )}
+                        </span>
                         </Link>
                       </TableCell>
 

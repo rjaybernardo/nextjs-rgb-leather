@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import { addItemToCart, removeItemFromCart } from "@/lib/actions/cart.actions";
 import { formatCurrency } from "@/lib/utils";
 import type { Cart } from "@/types";
@@ -28,12 +29,12 @@ const CartTable = ({ cart }: CartTableProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const handleRemove = (productId: string) => {
+  const handleRemove = (item: Cart["items"][number]) => {
     startTransition(async () => {
-      const res = await removeItemFromCart(productId);
+      const res = await removeItemFromCart(item.productId, item.variantId);
 
       if (!res.success) {
-        console.error(res.message);
+        toast.add({ type: "error", description: res.message });
       }
     });
   };
@@ -43,7 +44,7 @@ const CartTable = ({ cart }: CartTableProps) => {
       const res = await addItemToCart(item);
 
       if (!res.success) {
-        console.error(res.message);
+        toast.add({ type: "error", description: res.message });
       }
     });
   };
@@ -79,7 +80,7 @@ const CartTable = ({ cart }: CartTableProps) => {
 
               <TableBody>
                 {cart.items.map((item) => (
-                  <TableRow key={item.slug}>
+                  <TableRow key={`${item.productId}-${item.variantId ?? ""}`}>
                     <TableCell>
                       <Link
                         href={`/product/${item.slug}`}
@@ -91,7 +92,14 @@ const CartTable = ({ cart }: CartTableProps) => {
                           width={50}
                           height={50}
                         />
-                        <span className="px-2">{item.name}</span>
+                        <span className="px-2">
+                          {item.name}
+                          {item.variantTitle && (
+                            <span className="block text-xs text-muted-foreground">
+                              {item.variantTitle}
+                            </span>
+                          )}
+                        </span>
                       </Link>
                     </TableCell>
 
@@ -101,7 +109,7 @@ const CartTable = ({ cart }: CartTableProps) => {
                           type="button"
                           variant="outline"
                           disabled={isPending}
-                          onClick={() => handleRemove(item.productId)}
+                          onClick={() => handleRemove(item)}
                           aria-label={`Remove one ${item.name}`}
                         >
                           {isPending ? (

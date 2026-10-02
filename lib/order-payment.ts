@@ -72,6 +72,7 @@ export async function markOrderPaid({
         qty: item.qty,
         price: Number(item.price),
         image: item.image,
+        variantTitle: item.variantTitle,
       })),
     }),
   );

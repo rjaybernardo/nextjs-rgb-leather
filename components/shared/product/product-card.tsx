@@ -6,6 +6,7 @@ import ProductPrice from "@/components/shared/product/product-price";
 import Rating from "@/components/shared/product/rating";
 import { Badge } from "@/components/ui/badge";
 import WishlistButton from "@/components/shared/product/wishlist-button";
+import { priceRange } from "@/lib/variant-utils";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import type { Product } from "@/types";
 
@@ -72,7 +73,13 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
           </div>
 
           {product.stock > 0 ? (
-            <ProductPrice value={product.price} />
+            <div className="flex items-baseline gap-1">
+              {/* Variant prices differ: show the lowest */}
+              {(priceRange(product.variants ?? [])?.max ?? 0) > product.price && (
+                <span className="text-xs text-muted-foreground">From</span>
+              )}
+              <ProductPrice value={product.price} />
+            </div>
           ) : (
             <p className="font-bold text-destructive">Out of Stock</p>
           )}
