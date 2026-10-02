@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { convertToPlainObject } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 import { insertProductSchema, updateProductSchema } from "@/lib/validators";
+import { Prisma } from "@/lib/generated/prisma/client";
 
 export async function getLatestProducts() {
   const data = await prisma.product.findMany({
@@ -57,20 +58,37 @@ export async function getProductById(productId: string) {
 }
 
 export async function getAllProducts({
+  query,
   limit = PAGE_SIZE,
   page,
+  category,
 }: {
   query: string;
   limit?: number;
   page: number;
   category?: string;
 }) {
-  const data = await prisma.product.findMany({
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+  const where: Prisma.ProductWhereInput = {
+    ...(query && query !== "all"
+      ? {
+          name: {
+            contains: query,
+            mode: "insensitive",
+          },
+        }
+      : {}),
+    ...(category && category !== "all" ? { category } : {}),
+  };
 
-  const dataCount = await prisma.product.count();
+  const [data, dataCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.product.count({ where }),
+  ]);
   const plainData = convertToPlainObject(data);
 
   return {

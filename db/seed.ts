@@ -5,6 +5,10 @@ import sampleData from "./sample-data";
 async function main() {
   console.log("🌱 Seeding database...");
 
+  // Orders reference products (onDelete: Restrict), so clear them first
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.cart.deleteMany();
   await prisma.product.deleteMany();
   await prisma.account.deleteMany();
   await prisma.session.deleteMany();

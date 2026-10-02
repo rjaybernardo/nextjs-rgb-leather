@@ -1,4 +1,4 @@
-import { compareSync } from "bcrypt-ts-edge";
+import { compare } from "bcrypt-ts-edge";
 import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -37,7 +37,7 @@ export const authConfigWithCredentials = {
           return null;
         }
 
-        const user = await prisma.user.findFirst({
+        const user = await prisma.user.findUnique({
           where: {
             email: credentials.email,
           },
@@ -47,7 +47,7 @@ export const authConfigWithCredentials = {
           return null;
         }
 
-        const passwordMatches = compareSync(
+        const passwordMatches = await compare(
           credentials.password,
           user.password,
         );

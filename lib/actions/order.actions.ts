@@ -205,22 +205,23 @@ export async function getMyOrders({
     throw new Error("User is not authenticated");
   }
 
-  const data = await prisma.order.findMany({
-    where: {
-      userId: session.user.id!,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: limit,
-    skip: (page - 1) * limit,
-  });
-
-  const dataCount = await prisma.order.count({
-    where: {
-      userId: session.user.id!,
-    },
-  });
+  const [data, dataCount] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        userId: session.user.id!,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+    }),
+    prisma.order.count({
+      where: {
+        userId: session.user.id!,
+      },
+    }),
+  ]);
 
   return {
     data,
@@ -252,29 +253,30 @@ export async function getAllOrders({
         }
       : {};
 
-  const data = await prisma.order.findMany({
-    where: {
-      ...queryFilter,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: limit,
-    skip: (page - 1) * limit,
-    include: {
-      user: {
-        select: {
-          name: true,
+  const [data, dataCount] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        ...queryFilter,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
         },
       },
-    },
-  });
-
-  const dataCount = await prisma.order.count({
-    where: {
-      ...queryFilter,
-    },
-  });
+    }),
+    prisma.order.count({
+      where: {
+        ...queryFilter,
+      },
+    }),
+  ]);
 
   return {
     data: data.map((order) => ({
@@ -424,50 +426,56 @@ type SalesDataType = {
 export async function getOrderSummary() {
   await requireAdmin();
 
-  const ordersCount = await prisma.order.count();
-  const productsCount = await prisma.product.count();
-  const usersCount = await prisma.user.count();
-
-  const totalSalesResult = await prisma.order.aggregate({
-    _sum: {
-      totalPrice: true,
-    },
-  });
+  const [
+    ordersCount,
+    productsCount,
+    usersCount,
+    totalSalesResult,
+    salesDataRaw,
+    latestOrders,
+  ] = await Promise.all([
+    prisma.order.count(),
+    prisma.product.count(),
+    prisma.user.count(),
+    prisma.order.aggregate({
+      _sum: {
+        totalPrice: true,
+      },
+    }),
+    prisma.$queryRaw<
+      Array<{
+        month: string;
+        totalSales: Prisma.Decimal;
+      }>
+    >`
+      SELECT
+        to_char("createdAt", 'MM/YY') AS "month",
+        SUM("totalPrice") AS "totalSales"
+      FROM "Order"
+      GROUP BY to_char("createdAt", 'MM/YY')
+      ORDER BY MIN("createdAt") ASC
+    `,
+    prisma.order.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      take: 6,
+    }),
+  ]);
 
   const totalSales = Number(totalSalesResult._sum.totalPrice ?? 0);
-
-  const salesDataRaw = await prisma.$queryRaw<
-    Array<{
-      month: string;
-      totalSales: Prisma.Decimal;
-    }>
-  >`
-    SELECT
-      to_char("createdAt", 'MM/YY') AS "month",
-      SUM("totalPrice") AS "totalSales"
-    FROM "Order"
-    GROUP BY to_char("createdAt", 'MM/YY')
-    ORDER BY MIN("createdAt") ASC
-  `;
 
   const salesData: SalesDataType = salesDataRaw.map((entry) => ({
     month: entry.month,
     totalSales: Number(entry.totalSales),
   }));
-
-  const latestOrders = await prisma.order.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-        },
-      },
-    },
-    take: 6,
-  });
 
   return {
     ordersCount,

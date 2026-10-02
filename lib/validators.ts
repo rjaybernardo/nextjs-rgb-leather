@@ -12,10 +12,10 @@ const currency = z
 
 export const insertProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
-  slug: z.string().min(3, "Name must be at least 3 characters"),
-  category: z.string().min(3, "Name must be at least 3 characters"),
-  brand: z.string().min(3, "Name must be at least 3 characters"),
-  description: z.string().min(3, "Name must be at least 3 characters"),
+  slug: z.string().min(3, "Slug must be at least 3 characters"),
+  category: z.string().min(3, "Category must be at least 3 characters"),
+  brand: z.string().min(3, "Brand must be at least 3 characters"),
+  description: z.string().min(3, "Description must be at least 3 characters"),
   stock: z.coerce
     .number()
     .int("Stock must be a whole number")
@@ -38,8 +38,8 @@ export const signInFormSchema = z.object({
     error: "Invalid email address",
   }),
 
-  password: z.string().min(3, {
-    error: "Password must be at least 3 characters",
+  password: z.string().min(1, {
+    error: "Password is required",
   }),
 });
 
@@ -53,12 +53,12 @@ export const signUpFormSchema = z
       error: "Invalid email address",
     }),
 
-    password: z.string().min(3, {
-      error: "Password must be at least 3 characters",
+    password: z.string().min(6, {
+      error: "Password must be at least 6 characters",
     }),
 
-    confirmPassword: z.string().min(3, {
-      error: "Confirm password must be at least 3 characters",
+    confirmPassword: z.string().min(6, {
+      error: "Confirm password must be at least 6 characters",
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -198,7 +198,9 @@ export const insertOrderItemSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
-  email: z.string().min(3, "Email must be at least 3 characters"),
+  email: z.email({
+    error: "Invalid email address",
+  }),
 });
 
 // Update User Schema

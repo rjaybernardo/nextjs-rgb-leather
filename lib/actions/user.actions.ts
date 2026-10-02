@@ -1,7 +1,8 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { compareSync, hashSync } from "bcrypt-ts-edge";
+import { redirect } from "next/navigation";
+import { hash } from "bcrypt-ts-edge";
 import { AuthError } from "next-auth";
 import { z } from "zod";
 
@@ -51,82 +52,73 @@ const persistGuestCart = async (userId: string) => {
   });
 };
 
+// Reduce a callbackUrl to a same-site path to prevent open redirects
+const getSafeCallbackUrl = (value: FormDataEntryValue | null) => {
+  if (typeof value !== "string" || value.length === 0) return "/";
+
+  let url: URL;
+
+  try {
+    url = new URL(value, "http://localhost");
+  } catch {
+    return "/";
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") return "/";
+
+  // Collapse leading slashes so "//evil.com" can't become a protocol-relative URL
+  return `${url.pathname.replace(/^\/+/, "/")}${url.search}${url.hash}`;
+};
+
 export async function signInWithCredentials(
   _prevState: unknown,
   formData: FormData,
 ) {
+  let user;
+
   try {
-    const user = signInFormSchema.parse({
+    user = signInFormSchema.parse({
       email: formData.get("email"),
       password: formData.get("password"),
     });
 
-    const currentUser = await prisma.user.findFirst({
-      where: {
-        email: user.email,
-      },
-    });
-
-    if (!currentUser || !currentUser.password) {
-      return {
-        success: false,
-        message: "Invalid email or password",
-      };
-    }
-
-    const passwordMatches = compareSync(user.password, currentUser.password);
-
-    if (!passwordMatches) {
-      return {
-        success: false,
-        message: "Invalid email or password",
-      };
-    }
-
-    await persistGuestCart(currentUser.id);
-
-    const callbackUrlValue = formData.get("callbackUrl");
-
-    const callbackUrl =
-      typeof callbackUrlValue === "string" && callbackUrlValue.length > 0
-        ? callbackUrlValue
-        : "/";
-
-    /*
-     * Auth.js redirects after a successful sign-in.
-     *
-     * Do not catch/rewrite the redirect exception. It needs to
-     * propagate through Next.js so the browser is redirected.
-     */
+    // Password is verified once, in the Credentials provider's authorize()
     await signIn("credentials", {
       email: user.email,
       password: user.password,
-      redirectTo: callbackUrl,
+      redirect: false,
     });
-
-    return {
-      success: true,
-      message: "Signed in successfully",
-    };
   } catch (error) {
     if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return {
-            success: false,
-            message: "Invalid email or password",
-          };
-
-        default:
-          return {
-            success: false,
-            message: "Something went wrong",
-          };
-      }
+      return {
+        success: false,
+        message:
+          error.type === "CredentialsSignin"
+            ? "Invalid email or password"
+            : "Something went wrong",
+      };
     }
 
-    throw error;
+    return {
+      success: false,
+      message: formatError(error),
+    };
   }
+
+  const signedInUser = await prisma.user.findUnique({
+    where: {
+      email: user.email,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (signedInUser) {
+    await persistGuestCart(signedInUser.id);
+  }
+
+  redirect(getSafeCallbackUrl(formData.get("callbackUrl")));
 }
 
 export async function signUp(_prevState: unknown, formData: FormData) {
@@ -140,7 +132,7 @@ export async function signUp(_prevState: unknown, formData: FormData) {
       confirmPassword: formData.get("confirmPassword"),
     });
 
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.user.findUnique({
       where: {
         email: user.email,
       },
@@ -153,7 +145,7 @@ export async function signUp(_prevState: unknown, formData: FormData) {
       };
     }
 
-    const hashedPassword = hashSync(user.password, 10);
+    const hashedPassword = await hash(user.password, 10);
 
     const createdUser = await prisma.user.create({
       data: {
@@ -171,13 +163,6 @@ export async function signUp(_prevState: unknown, formData: FormData) {
     };
   }
 
-  const callbackUrlValue = formData.get("callbackUrl");
-
-  const callbackUrl =
-    typeof callbackUrlValue === "string" && callbackUrlValue.length > 0
-      ? callbackUrlValue
-      : "/";
-
   /*
    * Auth.js uses a redirect after successful authentication.
    * Let that redirect propagate through Next.js.
@@ -185,7 +170,7 @@ export async function signUp(_prevState: unknown, formData: FormData) {
   await signIn("credentials", {
     email: user.email,
     password: user.password,
-    redirectTo: callbackUrl,
+    redirectTo: getSafeCallbackUrl(formData.get("callbackUrl")),
   });
 
   return {
@@ -400,25 +385,26 @@ export async function getAllUsers({
         }
       : {};
 
-  const data = await prisma.user.findMany({
-    where: {
-      ...queryFilter,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: limit,
-    skip: (page - 1) * limit,
-    omit: {
-      password: true,
-    },
-  });
-
-  const dataCount = await prisma.user.count({
-    where: {
-      ...queryFilter,
-    },
-  });
+  const [data, dataCount] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        ...queryFilter,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+      omit: {
+        password: true,
+      },
+    }),
+    prisma.user.count({
+      where: {
+        ...queryFilter,
+      },
+    }),
+  ]);
 
   return {
     data,

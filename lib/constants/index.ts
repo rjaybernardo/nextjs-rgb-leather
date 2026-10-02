@@ -11,8 +11,8 @@ export const LATEST_PRODUCTS_LIMIT =
   Number(process.env.LATEST_PRODUCTS_LIMIT) || 4;
 
 export const signInDefaultValues = {
-  email: "admin@example.com",
-  password: "123456",
+  email: "",
+  password: "",
 };
 
 export const signUpDefaultValues = {
@@ -37,7 +37,7 @@ export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
 export const DEFAULT_PAYMENT_METHOD =
   process.env.DEFAULT_PAYMENT_METHOD || "PayPal";
 
-export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 2;
+export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
 
 export const productDefaultValues = {
   name: "",
@@ -55,5 +55,5 @@ export const productDefaultValues = {
 };
 
 export const USER_ROLES = process.env.USER_ROLES
-  ? process.env.USER_ROLES.split(", ")
+  ? process.env.USER_ROLES.split(",").map((role) => role.trim())
   : ["admin", "user"];
