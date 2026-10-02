@@ -9,6 +9,7 @@ const protectedPaths = [
   /^\/order(?:\/.*)?$/,
   /^\/account(?:\/.*)?$/,
   /^\/admin(?:\/.*)?$/,
+  /^\/studio(?:\/.*)?$/,
 ];
 
 export const isProtectedPath = (pathname: string) =>

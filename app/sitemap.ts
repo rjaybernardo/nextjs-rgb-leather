@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // builds don't need a database connection
   await connection();
 
-  const [products, categories] = await Promise.all([
+  const [products, categories, pages] = await Promise.all([
     prisma.product.findMany({
       select: {
         slug: true,
@@ -29,6 +29,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         slug: true,
       },
     }),
+    prisma.page.findMany({
+      where: {
+        published: true,
+      },
+      select: {
+        slug: true,
+        updatedAt: true,
+      },
+    }),
   ]);
 
   return [
@@ -46,6 +55,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SERVER_URL}/search?category=${encodeURIComponent(category.slug)}`,
       changeFrequency: "weekly" as const,
       priority: 0.7,
+    })),
+    ...pages.map((page) => ({
+      url: `${SERVER_URL}/pages/${page.slug}`,
+      lastModified: page.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
     })),
     ...products.map((product) => ({
       url: `${SERVER_URL}/product/${product.slug}`,

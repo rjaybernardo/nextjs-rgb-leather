@@ -42,7 +42,7 @@ const sendVerificationEmail = async (email: string) => {
     token,
   })}`;
 
-  await sendEmail(verifyEmailEmail(email, verifyUrl));
+  await sendEmail(await verifyEmailEmail(email, verifyUrl));
 };
 
 const persistGuestCart = async (userId: string) => {
@@ -544,7 +544,7 @@ export async function requestPasswordReset(
         token,
       })}`;
 
-      await sendEmail(passwordResetEmail(user.email, resetUrl));
+      await sendEmail(await passwordResetEmail(user.email, resetUrl));
     }
 
     return {

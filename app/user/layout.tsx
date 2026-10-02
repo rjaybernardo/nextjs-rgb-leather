@@ -1,10 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { APP_NAME } from "@/lib/constants";
 import Menu from "@/components/shared/header/menu";
 
 import MainNav from "./main-nav";
+import SiteLogo from "@/components/shared/site-logo";
 
 export default function UserLayout({
   children,
@@ -16,13 +15,7 @@ export default function UserLayout({
       <header className="border-b">
         <div className="wrapper flex min-h-16 items-center px-4">
           <Link href="/" className="shrink-0">
-            <Image
-              src="/images/logo.svg"
-              width={48}
-              height={48}
-              alt={`${APP_NAME} logo`}
-              priority
-            />
+            <SiteLogo size={48} priority />
           </Link>
 
           <MainNav className="mx-6" />

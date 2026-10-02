@@ -1,19 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
-import { APP_NAME } from "@/lib/constants";
+import SiteLogo from "@/components/shared/site-logo";
 
 const NotFound = () => {
   return (
     <main className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16">
-      <Image
-        src="/images/logo.svg"
-        alt={`${APP_NAME} logo`}
-        width={64}
-        height={64}
-        priority
-      />
+      <SiteLogo size={64} priority />
 
       <div className="mt-6 w-full max-w-md rounded-lg border p-8 text-center shadow-sm">
         <h1 className="text-3xl font-bold tracking-tight">Page Not Found</h1>

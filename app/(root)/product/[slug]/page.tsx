@@ -11,7 +11,8 @@ import CartButton from "@/components/shared/product/cart-button";
 import WishlistButton from "@/components/shared/product/wishlist-button";
 import { getMyWishlistIds } from "@/lib/actions/wishlist.actions";
 import Rating from "@/components/shared/product/rating";
-import { APP_NAME, LOW_STOCK_THRESHOLD, SERVER_URL } from "@/lib/constants";
+import { LOW_STOCK_THRESHOLD, SERVER_URL } from "@/lib/constants";
+import { getSiteSettings } from "@/lib/site";
 
 import ReviewList from "./review-list";
 
@@ -42,6 +43,7 @@ export async function generateMetadata({
     };
   }
 
+  const { siteName } = await getSiteSettings();
   const description = summarize(product.description);
   const image = product.images[0];
 
@@ -52,7 +54,7 @@ export async function generateMetadata({
       canonical: `/product/${product.slug}`,
     },
     openGraph: {
-      title: `${product.name} | ${APP_NAME}`,
+      title: `${product.name} | ${siteName}`,
       description,
       url: `/product/${product.slug}`,
       ...(image ? { images: [{ url: image, alt: product.name }] } : {}),

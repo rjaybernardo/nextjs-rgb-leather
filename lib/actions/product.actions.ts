@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, unstable_cache } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { LATEST_PRODUCTS_LIMIT, PAGE_SIZE } from "@/lib/constants";
@@ -18,38 +18,39 @@ import {
   CATALOG_TAG,
   invalidateCatalog,
 } from "@/lib/catalog-cache";
+import { cachedQuery } from "@/lib/cached-query";
 
 const catalogCache = {
   tags: [CATALOG_TAG],
   revalidate: CATALOG_REVALIDATE_SECONDS,
 };
 
-const cachedLatestProducts = unstable_cache(
-  async () => {
-      const data = await prisma.product.findMany({
-        take: LATEST_PRODUCTS_LIMIT,
-        orderBy: { createdAt: "desc" },
-        include: productInclude,
-      });
+const cachedLatestProducts = cachedQuery(
+  async (count: number) => {
+    const data = await prisma.product.findMany({
+      take: count,
+      orderBy: { createdAt: "desc" },
+      include: productInclude,
+    });
 
-      return data.map(toProduct);
+    return data.map(toProduct);
   },
   ["latest-products"],
   catalogCache,
 );
 
-export async function getLatestProducts() {
-  return cachedLatestProducts();
+export async function getLatestProducts(count = LATEST_PRODUCTS_LIMIT) {
+  return cachedLatestProducts(Math.min(Math.max(count, 1), 24));
 }
 
-const cachedProductBySlug = unstable_cache(
+const cachedProductBySlug = cachedQuery(
   async (slug: string) => {
-      const product = await prisma.product.findUnique({
-        where: { slug },
-        include: productInclude,
-      });
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: productInclude,
+    });
 
-      return product ? toProduct(product) : null;
+    return product ? toProduct(product) : null;
   },
   ["product-by-slug"],
   catalogCache,
@@ -97,7 +98,7 @@ const PRODUCT_ORDER_BY: Record<
   rating: [{ rating: "desc" }, { numReviews: "desc" }],
 };
 
-const cachedProductSearch = unstable_cache(
+const cachedProductSearch = cachedQuery(
   async ({
     query,
     limit = PAGE_SIZE,
@@ -172,7 +173,7 @@ export async function getAllProducts(params: {
 }
 
 // Categories that have products, with counts, for navigation and filters
-const cachedCategories = unstable_cache(
+const cachedCategories = cachedQuery(
   async () => {
     const categories = await prisma.category.findMany({
       orderBy: {
@@ -204,7 +205,7 @@ export async function getAllCategories() {
 }
 
 // Featured products that have a banner image, for the home carousel
-const cachedFeaturedProducts = unstable_cache(
+const cachedFeaturedProducts = cachedQuery(
   async () => {
     const data = await prisma.product.findMany({
       where: {

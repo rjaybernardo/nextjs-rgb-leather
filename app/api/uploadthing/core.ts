@@ -2,6 +2,7 @@ import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
 import { auth } from "@/auth";
+import { isAdmin } from "@/lib/auth-guard";
 
 const f = createUploadthing();
 
@@ -15,7 +16,8 @@ export const ourFileRouter = {
     .middleware(async () => {
       const session = await auth();
 
-      if (!session?.user) {
+      // Only admins upload (product images, Site Studio); customers can't
+      if (!session?.user || !(await isAdmin())) {
         throw new UploadThingError("Unauthorized");
       }
 

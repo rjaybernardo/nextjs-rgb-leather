@@ -37,6 +37,16 @@ const ACTION_LABELS: Record<string, string> = {
   "brand.create": "Created brand",
   "brand.update": "Renamed brand",
   "brand.delete": "Deleted brand",
+  "site.settings.update": "Changed site settings",
+  "site.section.create": "Added home section",
+  "site.section.update": "Edited home section",
+  "site.section.show": "Showed home section",
+  "site.section.hide": "Hid home section",
+  "site.section.delete": "Deleted home section",
+  "site.page.create": "Created page",
+  "site.page.update": "Edited page",
+  "site.page.delete": "Deleted page",
+  "site.subscriber.delete": "Removed subscriber",
 };
 
 const entityHref = (entityType: string, entityId: string | null) => {

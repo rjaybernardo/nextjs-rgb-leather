@@ -34,6 +34,10 @@ const links = [
     title: "Settings",
     href: "/admin/settings",
   },
+  {
+    title: "Site Studio",
+    href: "/studio",
+  },
 ];
 
 export function MainNav({ className, ...props }: React.ComponentProps<"nav">) {

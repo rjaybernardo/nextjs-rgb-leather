@@ -270,3 +270,44 @@ model Brand {
   createdAt DateTime  @default(now()) @db.Timestamp(6)
   products  Product[]
 }
+
+// Site Studio: a single row (id = 1) of branding, theme and footer settings,
+// validated by lib/site-config.ts
+model SiteSettings {
+  id        Int      @id @default(1)
+  data      Json     @db.Json
+  updatedAt DateTime @updatedAt
+}
+
+// Ordered, toggleable home page sections; `data` shape depends on `type`
+model HomeSection {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      String
+  position  Int
+  enabled   Boolean  @default(true)
+  data      Json     @db.Json
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt
+
+  @@index([position])
+}
+
+// Content pages (About, policies...) served at /pages/[slug]
+model Page {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug         String   @unique
+  title        String
+  description  String   @default("")
+  content      String   @default("")
+  published    Boolean  @default(false)
+  showInFooter Boolean  @default(true)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+}

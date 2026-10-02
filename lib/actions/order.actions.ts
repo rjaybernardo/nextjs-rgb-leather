@@ -247,7 +247,7 @@ export async function createOrder(): Promise<CreateOrderResult> {
     invalidateCatalog();
 
     await sendEmail(
-      orderPlacedEmail(user.email, {
+      await orderPlacedEmail(user.email, {
         id: insertedOrderId,
         totalPrice: prices.totalPrice,
         paymentMethod: order.paymentMethod,
@@ -558,7 +558,7 @@ export async function cancelOrder(orderId: string) {
       });
     }
 
-    await sendEmail(orderCancelledEmail(order.user.email, order.id));
+    await sendEmail(await orderCancelledEmail(order.user.email, order.id));
 
     revalidatePath(`/order/${order.id}`);
     revalidatePath("/admin/orders");
@@ -635,7 +635,7 @@ export async function shipOrder(
     });
 
     await sendEmail(
-      orderShippedEmail(order.user.email, order.id, {
+      await orderShippedEmail(order.user.email, order.id, {
         courier,
         trackingNumber,
       }),

@@ -58,7 +58,7 @@ export async function markOrderPaid({
   }
 
   await sendEmail(
-    orderPaidEmail(order.user.email, {
+    await orderPaidEmail(order.user.email, {
       id: order.id,
       totalPrice: Number(order.totalPrice),
       paymentMethod: order.paymentMethod,

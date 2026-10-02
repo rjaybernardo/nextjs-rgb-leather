@@ -16,6 +16,7 @@ export default async function globalSetup() {
           { key: { startsWith: "signin-ip:" } },
           { key: { startsWith: "signin-email:" } },
           { key: { startsWith: "order:" } },
+          { key: { startsWith: "newsletter:" } },
         ],
       },
     });

@@ -1,7 +1,8 @@
 import "server-only";
 
 import type { Email } from "@/lib/email";
-import { APP_NAME, getPaymentMethodLabel, SERVER_URL } from "@/lib/constants";
+import { getPaymentMethodLabel, SERVER_URL } from "@/lib/constants";
+import { getSiteSettings } from "@/lib/site";
 import { formatCurrency, formatId } from "@/lib/utils";
 
 type OrderSummary = {
@@ -13,6 +14,9 @@ type OrderSummary = {
 
 const orderUrl = (orderId: string) => `${SERVER_URL}/order/${orderId}`;
 
+// The name set in Site Studio → Branding
+const siteName = async () => (await getSiteSettings()).siteName;
+
 const itemLines = (order: OrderSummary) =>
   order.orderitems
     .map(
@@ -21,9 +25,11 @@ const itemLines = (order: OrderSummary) =>
     )
     .join("\n");
 
-export const orderPlacedEmail = (to: string, order: OrderSummary): Email => ({
+export const orderPlacedEmail = async (to: string, order: OrderSummary): Promise<Email> => ({
   to,
-  subject: `${APP_NAME}: order ${formatId(order.id)} received`,
+  category: "order_placed",
+  idempotencyKey: `order-placed/${order.id}`,
+  subject: `${await siteName()}: order ${formatId(order.id)} received`,
   text: [
     "Thanks for your order.",
     "",
@@ -38,9 +44,11 @@ export const orderPlacedEmail = (to: string, order: OrderSummary): Email => ({
   ].join("\n"),
 });
 
-export const orderPaidEmail = (to: string, order: OrderSummary): Email => ({
+export const orderPaidEmail = async (to: string, order: OrderSummary): Promise<Email> => ({
   to,
-  subject: `${APP_NAME}: payment received for order ${formatId(order.id)}`,
+  category: "order_paid",
+  idempotencyKey: `order-paid/${order.id}`,
+  subject: `${await siteName()}: payment received for order ${formatId(order.id)}`,
   text: [
     `We received your payment of ${formatCurrency(order.totalPrice)}.`,
     "We'll let you know when your order ships.",
@@ -49,13 +57,15 @@ export const orderPaidEmail = (to: string, order: OrderSummary): Email => ({
   ].join("\n"),
 });
 
-export const orderShippedEmail = (
+export const orderShippedEmail = async (
   to: string,
   orderId: string,
   shipment: { courier: string; trackingNumber?: string },
-): Email => ({
+): Promise<Email> => ({
   to,
-  subject: `${APP_NAME}: order ${formatId(orderId)} has shipped`,
+  category: "order_shipped",
+  idempotencyKey: `order-shipped/${orderId}`,
+  subject: `${await siteName()}: order ${formatId(orderId)} has shipped`,
   text: [
     `Your order is on its way with ${shipment.courier}.`,
     shipment.trackingNumber
@@ -68,9 +78,11 @@ export const orderShippedEmail = (
     .join("\n"),
 });
 
-export const orderCancelledEmail = (to: string, orderId: string): Email => ({
+export const orderCancelledEmail = async (to: string, orderId: string): Promise<Email> => ({
   to,
-  subject: `${APP_NAME}: order ${formatId(orderId)} cancelled`,
+  category: "order_cancelled",
+  idempotencyKey: `order-cancelled/${orderId}`,
+  subject: `${await siteName()}: order ${formatId(orderId)} cancelled`,
   text: [
     "Your order has been cancelled. You haven't been charged.",
     "",
@@ -78,9 +90,10 @@ export const orderCancelledEmail = (to: string, orderId: string): Email => ({
   ].join("\n"),
 });
 
-export const passwordResetEmail = (to: string, resetUrl: string): Email => ({
+export const passwordResetEmail = async (to: string, resetUrl: string): Promise<Email> => ({
   to,
-  subject: `${APP_NAME}: reset your password`,
+  category: "password_reset",
+  subject: `${await siteName()}: reset your password`,
   text: [
     "Someone asked to reset the password for your account.",
     "",
@@ -90,9 +103,10 @@ export const passwordResetEmail = (to: string, resetUrl: string): Email => ({
   ].join("\n"),
 });
 
-export const verifyEmailEmail = (to: string, verifyUrl: string): Email => ({
+export const verifyEmailEmail = async (to: string, verifyUrl: string): Promise<Email> => ({
   to,
-  subject: `${APP_NAME}: confirm your email`,
+  category: "verify_email",
+  subject: `${await siteName()}: confirm your email`,
   text: [
     "Confirm your email address to finish setting up your account.",
     "",

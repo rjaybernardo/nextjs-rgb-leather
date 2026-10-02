@@ -1,6 +1,6 @@
 import "server-only";
 
-import { revalidateTag } from "next/cache";
+import { updateTag } from "next/cache";
 
 /*
  * Storefront catalog reads (categories, product lists, product pages) are
@@ -13,7 +13,9 @@ export const CATALOG_TAG = "catalog";
 // Safety net: cached entries refresh at least this often (seconds)
 export const CATALOG_REVALIDATE_SECONDS = 300;
 
+// Server actions only (all catalog changes happen in actions). updateTag
+// expires entries immediately; revalidateTag with a profile can still serve
+// the old copy to the next visitor.
 export function invalidateCatalog() {
-  // expire: 0 so the next request reads fresh data instead of a stale copy
-  revalidateTag(CATALOG_TAG, { expire: 0 });
+  updateTag(CATALOG_TAG);
 }

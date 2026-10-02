@@ -1,44 +1,24 @@
-import DealCountdown from "@/components/deal-countdown";
-import IconBoxes from "@/components/icon-boxes";
-import FeaturedCarousel from "@/components/shared/product/featured-carousel";
-import ProductList from "@/components/shared/product/product-list";
-import { buttonVariants } from "@/components/ui/button";
-import {
-  getFeaturedProducts,
-  getLatestProducts,
-} from "@/lib/actions/product.actions";
 import Link from "next/link";
-import { connection } from "next/server";
 
+import HomeSections from "@/components/sections/home-sections";
+import { buttonVariants } from "@/components/ui/button";
+import { getHomeSections } from "@/lib/site";
+
+// Sections, their order and content come from Site Studio → Home page
 const HomePage = async () => {
-  // Per-visitor page (wishlist hearts) built from live product data
-  await connection();
+  const sections = await getHomeSections();
 
-  const [latestProducts, featuredProducts] = await Promise.all([
-    getLatestProducts(),
-    getFeaturedProducts(),
-  ]);
-
-  return (
-    <div className="space-y-8">
-      <FeaturedCarousel products={featuredProducts} />
-
-      <ProductList title="Newest Arrivals" data={latestProducts} />
-
-      <div className="flex justify-center">
-        <Link
-          href="/search"
-          className={buttonVariants({ variant: "outline", size: "lg" })}
-        >
-          View all products
+  if (sections.length === 0) {
+    return (
+      <div className="py-20 text-center">
+        <Link href="/search" className={buttonVariants({ size: "lg" })}>
+          Browse all products
         </Link>
       </div>
+    );
+  }
 
-      <DealCountdown />
-
-      <IconBoxes />
-    </div>
-  );
+  return <HomeSections sections={sections} />;
 };
 
 export default HomePage;
