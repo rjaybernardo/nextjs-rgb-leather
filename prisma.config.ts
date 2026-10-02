@@ -7,7 +7,8 @@ export default defineConfig({
 
   migrations: {
     path: "prisma/migrations",
-    seed: "tsx db/seed.ts",
+    // lib/prisma is server-only; this condition lets the seed import it
+    seed: "tsx --conditions=react-server db/seed.ts",
   },
 
   // Migrations need a direct connection: session-level advisory locks
