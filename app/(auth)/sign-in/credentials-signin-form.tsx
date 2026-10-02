@@ -84,7 +84,10 @@ export default function CredentialsSignInForm() {
 
         <div className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link className="link" href="/sign-up">
+          <Link
+            className="link"
+            href={`/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+          >
             Sign Up
           </Link>
         </div>

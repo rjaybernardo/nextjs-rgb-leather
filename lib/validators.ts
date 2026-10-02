@@ -119,8 +119,13 @@ export const insertCartSchema = z.object({
 });
 
 // Shipping Address
-// Philippine mobile number: 09XXXXXXXXX or +639XXXXXXXXX (spaces/dashes ok)
-export const normalizePhone = (value: string) => value.replace(/[\s()-]/g, "");
+// Philippine mobile number: 09XXXXXXXXX or +639XXXXXXXXX (spaces/dashes ok),
+// stored in international form (+639XXXXXXXXX)
+export const normalizePhone = (value: string) => {
+  const digits = value.replace(/[\s()-]/g, "");
+
+  return /^09\d{9}$/.test(digits) ? `+63${digits.slice(1)}` : digits;
+};
 
 const PH_MOBILE = /^(\+639|09)\d{9}$/;
 

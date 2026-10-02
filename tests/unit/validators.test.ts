@@ -48,8 +48,10 @@ describe("addressSchema (Philippine addresses)", () => {
     expect(addressSchema.safeParse({ ...address, province: "" }).success).toBe(false);
   });
 
-  it("normalizes phone formatting for storage", () => {
+  it("stores mobile numbers in +63 form", () => {
     expect(normalizePhone("+63 (917) 123-4567")).toBe("+639171234567");
+    expect(normalizePhone("0917 123 4567")).toBe("+639171234567");
+    expect(normalizePhone("0917-123-4567")).toBe("+639171234567");
   });
 });
 
