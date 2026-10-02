@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { APP_NAME } from "@/lib/constants";
+import { getSafeCallbackUrl } from "@/lib/utils";
 
 import CredentialsSignInForm from "./credentials-signin-form";
 
@@ -33,10 +34,9 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     : params.callbackUrl;
 
   const session = await auth();
-  console.log("SIGN-IN PAGE SESSION:", session);
 
   if (session) {
-    redirect(callbackUrl || "/");
+    redirect(getSafeCallbackUrl(callbackUrl));
   }
 
   return (

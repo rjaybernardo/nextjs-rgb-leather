@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatDateTime, formatId, cn } from "@/lib/utils";
+import OrderStatusBadge from "@/components/shared/order-status-badge";
 
 export const metadata: Metadata = {
   title: "Admin Orders",
@@ -68,7 +69,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               <TableHead>DATE</TableHead>
               <TableHead>TOTAL</TableHead>
               <TableHead>PAID</TableHead>
-              <TableHead>DELIVERED</TableHead>
+              <TableHead>STATUS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
@@ -92,15 +93,13 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   <TableCell>{formatCurrency(order.totalPrice)}</TableCell>
 
                   <TableCell>
-                    {order.isPaid && order.paidAt
+                    {order.paidAt
                       ? formatDateTime(order.paidAt).dateTime
                       : "Not Paid"}
                   </TableCell>
 
                   <TableCell>
-                    {order.isDelivered && order.deliveredAt
-                      ? formatDateTime(order.deliveredAt).dateTime
-                      : "Not Delivered"}
+                    <OrderStatusBadge status={order.status} />
                   </TableCell>
 
                   <TableCell>

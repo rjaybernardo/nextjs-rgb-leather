@@ -8,6 +8,8 @@ import {
   toCentavos,
   type PayMongoCheckoutSession,
 } from "@/lib/paymongo";
+import { sendEmail } from "@/lib/email";
+import { orderPaidEmail } from "@/lib/email-templates";
 import { prisma } from "@/lib/prisma";
 
 // Not a server action: only server code (admin actions, webhook) can call this
@@ -22,26 +24,51 @@ export async function markOrderPaid({
     where: {
       id: orderId,
     },
+    include: {
+      orderitems: true,
+      user: {
+        select: {
+          email: true,
+        },
+      },
+    },
   });
 
   if (!order) {
     throw new Error("Order not found");
   }
 
-  if (order.isPaid) {
-    return;
-  }
-
-  await prisma.order.update({
+  // Only the first confirmation records the payment (webhook and return
+  // check can race). A payment on a cancelled order is recorded but leaves
+  // it cancelled, so an admin can refund it.
+  const { count } = await prisma.order.updateMany({
     where: {
       id: orderId,
+      paidAt: null,
     },
     data: {
-      isPaid: true,
       paidAt: new Date(),
+      ...(order.status === "PENDING" ? { status: "PAID" as const } : {}),
       ...(paymentResult !== undefined ? { paymentResult } : {}),
     },
   });
+
+  if (count === 0) {
+    return;
+  }
+
+  await sendEmail(
+    orderPaidEmail(order.user.email, {
+      id: order.id,
+      totalPrice: Number(order.totalPrice),
+      paymentMethod: order.paymentMethod,
+      orderitems: order.orderitems.map((item) => ({
+        name: item.name,
+        qty: item.qty,
+        price: Number(item.price),
+      })),
+    }),
+  );
 
   revalidatePath(`/order/${orderId}`);
   revalidatePath("/admin/orders");
@@ -72,7 +99,7 @@ export async function applyPaidCheckoutSession(
     return { paid: false };
   }
 
-  if (order.isPaid) {
+  if (order.paidAt) {
     return { paid: true };
   }
 
@@ -116,7 +143,7 @@ export async function syncPayMongoPayment(orderId: string) {
     checkoutSessionId?: string;
   } | null;
 
-  if (!order || order.isPaid || !paymentResult?.checkoutSessionId) {
+  if (!order || order.paidAt || !paymentResult?.checkoutSessionId) {
     return;
   }
 

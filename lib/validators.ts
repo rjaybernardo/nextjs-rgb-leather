@@ -212,3 +212,33 @@ export const updateUserSchema = updateProfileSchema.extend({
     .min(1, "Role is required")
     .refine((value) => USER_ROLES.includes(value), "Invalid role"),
 });
+
+// Password reset
+export const forgotPasswordSchema = z.object({
+  email: z.email({
+    error: "Invalid email address",
+  }),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    email: z.email({
+      error: "Invalid reset link",
+    }),
+
+    token: z.string().min(1, {
+      error: "Invalid reset link",
+    }),
+
+    password: z.string().min(6, {
+      error: "Password must be at least 6 characters",
+    }),
+
+    confirmPassword: z.string().min(6, {
+      error: "Confirm password must be at least 6 characters",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "Passwords don't match",
+    path: ["confirmPassword"],
+  });

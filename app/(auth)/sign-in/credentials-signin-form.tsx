@@ -56,7 +56,13 @@ export default function CredentialsSignInForm() {
         </div>
 
         <div>
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+
+            <Link className="link text-sm" href="/forgot-password">
+              Forgot password?
+            </Link>
+          </div>
 
           <Input
             id="password"

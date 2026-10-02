@@ -1,11 +1,7 @@
 import "server-only";
 
-import dns from "node:dns";
-
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/generated/prisma/client";
-
-dns.setDefaultResultOrder("ipv4first");
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -13,7 +9,8 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }
 
-const adapter = new PrismaNeon({
+// Standard TCP connection: Neon's WebSocket driver failed to connect here
+const adapter = new PrismaPg({
   connectionString,
 });
 

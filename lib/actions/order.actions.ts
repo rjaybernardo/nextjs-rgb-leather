@@ -6,13 +6,20 @@ import { auth } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { calcPrice } from "@/lib/cart-pricing";
 import { getUserById } from "@/lib/actions/user.actions";
-import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
+import { assertAdmin, isAdmin, requireAdmin } from "@/lib/auth-guard";
+import { sendEmail } from "@/lib/email";
+import {
+  orderCancelledEmail,
+  orderPlacedEmail,
+  orderShippedEmail,
+} from "@/lib/email-templates";
+import { assertRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
 import { insertOrderSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
 import { PAGE_SIZE, PAYMENT_METHODS, SERVER_URL } from "@/lib/constants";
-import { markOrderPaid, syncPayMongoPayment } from "@/lib/order-payment";
+import { syncPayMongoPayment } from "@/lib/order-payment";
 import {
   createCheckoutSession,
   retrieveCheckoutSession,
@@ -45,6 +52,12 @@ export async function createOrder(): Promise<CreateOrderResult> {
     }
 
     const userId = session.user.id;
+
+    await assertRateLimit({
+      key: `order:${userId}`,
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
 
     const [cart, user] = await Promise.all([getMyCart(), getUserById(userId)]);
 
@@ -208,6 +221,15 @@ export async function createOrder(): Promise<CreateOrderResult> {
       throw new Error("Order was not created");
     }
 
+    await sendEmail(
+      orderPlacedEmail(user.email, {
+        id: insertedOrderId,
+        totalPrice: prices.totalPrice,
+        paymentMethod: order.paymentMethod,
+        orderitems: items,
+      }),
+    );
+
     return {
       success: true,
       message: "Order successfully created",
@@ -363,15 +385,40 @@ export async function getAllOrders({
   };
 }
 
-// Delete Order
+// Statuses where the order still holds stock that hasn't left the shop
+const STOCK_HELD_STATUSES = ["PENDING", "PAID"] as const;
+
+// Delete Order (admin); returns stock if the order hadn't shipped
 export async function deleteOrder(id: string) {
   try {
     await assertAdmin();
 
-    await prisma.order.delete({
-      where: {
-        id,
-      },
+    await prisma.$transaction(async (tx) => {
+      const order = await tx.order.delete({
+        where: {
+          id,
+        },
+        include: {
+          orderitems: true,
+        },
+      });
+
+      if (
+        (STOCK_HELD_STATUSES as readonly string[]).includes(order.status)
+      ) {
+        for (const item of order.orderitems) {
+          await tx.product.update({
+            where: {
+              id: item.productId,
+            },
+            data: {
+              stock: {
+                increment: item.qty,
+              },
+            },
+          });
+        }
+      }
     });
 
     revalidatePath("/admin/orders");
@@ -388,36 +435,76 @@ export async function deleteOrder(id: string) {
   }
 }
 
-// Update Order To Paid By COD
-export async function updateOrderToPaidByCOD(orderId: string) {
+// Cancel an unpaid, unshipped order (owner or admin); returns its stock
+export async function cancelOrder(orderId: string) {
   try {
-    await assertAdmin();
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      throw new Error("You must be signed in to cancel an order");
+    }
 
     const order = await prisma.order.findUnique({
       where: {
         id: orderId,
       },
-    });
-
-    if (!order) {
-      throw new Error("Order not found");
-    }
-
-    if (order.paymentMethod !== "CashOnDelivery") {
-      throw new Error("Only cash on delivery orders can be marked paid here");
-    }
-
-    await markOrderPaid({
-      orderId,
-      paymentResult: {
-        provider: "cod",
-        status: "paid",
+      include: {
+        orderitems: true,
+        user: {
+          select: {
+            email: true,
+          },
+        },
       },
     });
 
+    const canManage = order?.userId === session.user.id || (await isAdmin());
+
+    if (!order || !canManage) {
+      throw new Error("Order not found");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // The status guard makes this safe against a payment landing mid-cancel
+      const { count } = await tx.order.updateMany({
+        where: {
+          id: order.id,
+          status: "PENDING",
+          paidAt: null,
+        },
+        data: {
+          status: "CANCELLED",
+          cancelledAt: new Date(),
+        },
+      });
+
+      if (count === 0) {
+        throw new Error("Only unpaid orders that haven't shipped can be cancelled");
+      }
+
+      for (const item of order.orderitems) {
+        await tx.product.update({
+          where: {
+            id: item.productId,
+          },
+          data: {
+            stock: {
+              increment: item.qty,
+            },
+          },
+        });
+      }
+    });
+
+    await sendEmail(orderCancelledEmail(order.user.email, order.id));
+
+    revalidatePath(`/order/${order.id}`);
+    revalidatePath("/admin/orders");
+    revalidatePath("/user/orders");
+
     return {
       success: true,
-      message: "Order paid successfully",
+      message: "Order cancelled",
     };
   } catch (error) {
     return {
@@ -427,7 +514,68 @@ export async function updateOrderToPaidByCOD(orderId: string) {
   }
 }
 
-// Update Order To Delivered
+// Mark as shipped (admin): paid online orders, or COD orders not yet paid
+export async function shipOrder(orderId: string) {
+  try {
+    await assertAdmin();
+
+    const order = await prisma.order.findUnique({
+      where: {
+        id: orderId,
+      },
+      include: {
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    const canShip =
+      order.status === "PAID" ||
+      (order.status === "PENDING" && order.paymentMethod === "CashOnDelivery");
+
+    if (!canShip) {
+      throw new Error(
+        order.status === "PENDING"
+          ? "This order hasn't been paid yet"
+          : `This order is already ${order.status.toLowerCase()}`,
+      );
+    }
+
+    await prisma.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status: "SHIPPED",
+        shippedAt: new Date(),
+      },
+    });
+
+    await sendEmail(orderShippedEmail(order.user.email, order.id));
+
+    revalidatePath(`/order/${orderId}`);
+    revalidatePath("/admin/orders");
+
+    return {
+      success: true,
+      message: "Order marked as shipped",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+// Mark as delivered (admin); for COD this also records the cash payment
 export async function deliverOrder(orderId: string) {
   try {
     await assertAdmin();
@@ -442,24 +590,29 @@ export async function deliverOrder(orderId: string) {
       throw new Error("Order not found");
     }
 
-    if (!order.isPaid) {
-      throw new Error("Order is not paid");
+    if (order.status !== "SHIPPED") {
+      throw new Error("Only shipped orders can be marked as delivered");
     }
 
-    if (order.isDelivered) {
-      return {
-        success: true,
-        message: "Order is already delivered",
-      };
-    }
+    const now = new Date();
+    const collectCash = order.paymentMethod === "CashOnDelivery" && !order.paidAt;
 
     await prisma.order.update({
       where: {
         id: orderId,
       },
       data: {
-        isDelivered: true,
-        deliveredAt: new Date(),
+        status: "DELIVERED",
+        deliveredAt: now,
+        ...(collectCash
+          ? {
+              paidAt: now,
+              paymentResult: {
+                provider: "cod",
+                status: "paid",
+              },
+            }
+          : {}),
       },
     });
 
@@ -468,7 +621,9 @@ export async function deliverOrder(orderId: string) {
 
     return {
       success: true,
-      message: "Order delivered successfully",
+      message: collectCash
+        ? "Order delivered and cash payment recorded"
+        : "Order marked as delivered",
     };
   } catch (error) {
     return {
@@ -557,6 +712,12 @@ export async function startPayMongoCheckout(orderId: string) {
       throw new Error("You must be signed in to pay for an order");
     }
 
+    await assertRateLimit({
+      key: `checkout:${session.user.id}`,
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
+
     const order = await prisma.order.findUnique({
       where: {
         id: orderId,
@@ -576,8 +737,12 @@ export async function startPayMongoCheckout(orderId: string) {
       throw new Error("Order not found");
     }
 
-    if (order.isPaid) {
+    if (order.paidAt) {
       throw new Error("This order is already paid");
+    }
+
+    if (order.status !== "PENDING") {
+      throw new Error("This order can no longer be paid");
     }
 
     if (order.paymentMethod !== "PayMongo") {

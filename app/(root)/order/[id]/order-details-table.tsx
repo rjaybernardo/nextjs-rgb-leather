@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useTransition } from "react";
 
+import OrderStatusBadge from "@/components/shared/order-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,13 +18,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  cancelOrder,
   confirmPayMongoPayment,
   deliverOrder,
+  shipOrder,
   startPayMongoCheckout,
-  updateOrderToPaidByCOD,
 } from "@/lib/actions/order.actions";
-import { getPaymentMethodLabel } from "@/lib/constants";
 import { toast } from "@/components/ui/toast";
+import { getPaymentMethodLabel } from "@/lib/constants";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import type { Order, ShippingAddress } from "@/types";
 
@@ -34,6 +36,8 @@ type OrderDetailsTableProps = {
   paymentReturn?: "success" | "cancelled";
 };
 
+type ActionResult = { success: boolean; message: string };
+
 const OrderDetailsTable = ({
   order,
   isAdmin,
@@ -42,11 +46,7 @@ const OrderDetailsTable = ({
 }: OrderDetailsTableProps) => {
   const router = useRouter();
 
-  const [isPayPending, startPayTransition] = useTransition();
-
-  const [isPaidPending, startPaidTransition] = useTransition();
-
-  const [isDeliveredPending, startDeliveredTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const {
     shippingAddress,
@@ -56,21 +56,27 @@ const OrderDetailsTable = ({
     shippingPrice,
     totalPrice,
     paymentMethod,
-    isPaid,
+    status,
     paidAt,
-    isDelivered,
+    shippedAt,
     deliveredAt,
+    cancelledAt,
   } = order;
 
   const address = shippingAddress as ShippingAddress;
 
   const isCashOnDelivery = paymentMethod === "CashOnDelivery";
 
-  const canMarkAsPaid = isAdmin && isCashOnDelivery && !isPaid;
+  const canPayOnline =
+    isOwner && paymentMethod === "PayMongo" && status === "PENDING" && !paidAt;
 
-  const canMarkAsDelivered = isAdmin && isPaid && !isDelivered;
+  const canCancel = (isOwner || isAdmin) && status === "PENDING" && !paidAt;
 
-  const canPayOnline = isOwner && paymentMethod === "PayMongo" && !isPaid;
+  const canShip =
+    isAdmin &&
+    (status === "PAID" || (status === "PENDING" && isCashOnDelivery));
+
+  const canDeliver = isAdmin && status === "SHIPPED";
 
   // Back from PayMongo: confirm the payment once, then clean up the URL
   const handledReturn = useRef(false);
@@ -90,12 +96,12 @@ const OrderDetailsTable = ({
       return;
     }
 
-    if (isPaid) {
+    if (paidAt) {
       router.replace(`/order/${order.id}`);
       return;
     }
 
-    startPayTransition(async () => {
+    startTransition(async () => {
       const result = await confirmPayMongoPayment(order.id);
 
       if (!result.success) {
@@ -105,10 +111,25 @@ const OrderDetailsTable = ({
       router.replace(`/order/${order.id}`);
       router.refresh();
     });
-  }, [paymentReturn, isPaid, order.id, router]);
+  }, [paymentReturn, paidAt, order.id, router]);
+
+  function runAction(action: () => Promise<ActionResult>) {
+    startTransition(async () => {
+      const result = await action();
+
+      toast.add({
+        type: result.success ? "success" : "error",
+        description: result.message,
+      });
+
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
 
   function handlePayOnline() {
-    startPayTransition(async () => {
+    startTransition(async () => {
       const result = await startPayMongoCheckout(order.id);
 
       if (!result.success || !result.redirectTo) {
@@ -124,64 +145,55 @@ const OrderDetailsTable = ({
     });
   }
 
-  function handleMarkAsPaid() {
-    startPaidTransition(async () => {
-      const result = await updateOrderToPaidByCOD(order.id);
-
-      toast.add({
-        type: result.success ? "success" : "error",
-        description: result.message,
-      });
-
-      if (result.success) {
-        router.refresh();
-      }
-    });
-  }
-
-  function handleMarkAsDelivered() {
-    startDeliveredTransition(async () => {
-      const result = await deliverOrder(order.id);
-
-      toast.add({
-        type: result.success ? "success" : "error",
-        description: result.message,
-      });
-
-      if (result.success) {
-        router.refresh();
-      }
-    });
-  }
-
   return (
     <>
-      <h1 className="py-4 text-2xl">Order {formatId(order.id)}</h1>
+      <div className="flex flex-wrap items-center gap-3 py-4">
+        <h1 className="text-2xl">Order {formatId(order.id)}</h1>
+        <OrderStatusBadge status={status} />
+      </div>
 
       <div className="grid md:grid-cols-3 md:gap-5">
         <div className="space-y-4 overflow-x-auto md:col-span-2">
+          {status === "CANCELLED" && (
+            <Card>
+              <CardContent className="space-y-2 p-4">
+                <h2 className="text-xl">Order cancelled</h2>
+                <p className="text-muted-foreground">
+                  {cancelledAt
+                    ? `Cancelled on ${formatDateTime(cancelledAt).dateTime}.`
+                    : "This order was cancelled."}{" "}
+                  {paidAt
+                    ? "A payment was received after cancellation and will be refunded."
+                    : "No payment was taken."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardContent className="space-y-4 p-4">
-              <h2 className="pb-2 text-xl">Payment Method</h2>
+              <h2 className="pb-2 text-xl">Payment</h2>
 
               <p>{getPaymentMethodLabel(paymentMethod)}</p>
 
-              {isPaid && paidAt ? (
+              {paidAt ? (
                 <Badge variant="secondary">
-                  Paid at {formatDateTime(paidAt).dateTime}
+                  Paid on {formatDateTime(paidAt).dateTime}
                 </Badge>
               ) : (
-                <Badge variant="destructive">Not paid</Badge>
+                <Badge variant="outline">
+                  {isCashOnDelivery ? "Pay on delivery" : "Not paid"}
+                </Badge>
               )}
 
               {canPayOnline && (
                 <div className="space-y-2">
                   <Button
                     type="button"
-                    disabled={isPayPending}
+                    disabled={isPending}
                     onClick={handlePayOnline}
                   >
-                    {isPayPending ? "Please wait..." : "Pay now"}
+                    {isPending ? "Please wait..." : "Pay now"}
                   </Button>
 
                   <p className="text-sm text-muted-foreground">
@@ -190,24 +202,12 @@ const OrderDetailsTable = ({
                   </p>
                 </div>
               )}
-
-              {canMarkAsPaid && (
-                <div>
-                  <Button
-                    type="button"
-                    disabled={isPaidPending}
-                    onClick={handleMarkAsPaid}
-                  >
-                    {isPaidPending ? "Processing..." : "Mark As Paid"}
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="space-y-4 p-4">
-              <h2 className="pb-2 text-xl">Shipping Address</h2>
+              <h2 className="pb-2 text-xl">Shipping</h2>
 
               <p>{address.fullName}</p>
 
@@ -216,27 +216,64 @@ const OrderDetailsTable = ({
                 {address.country}
               </p>
 
-              {isDelivered && deliveredAt ? (
-                <Badge variant="secondary">
-                  Delivered at {formatDateTime(deliveredAt).dateTime}
-                </Badge>
-              ) : (
-                <Badge variant="destructive">Not delivered</Badge>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {shippedAt && (
+                  <Badge variant="secondary">
+                    Shipped on {formatDateTime(shippedAt).dateTime}
+                  </Badge>
+                )}
 
-              {canMarkAsDelivered && (
-                <div>
-                  <Button
-                    type="button"
-                    disabled={isDeliveredPending}
-                    onClick={handleMarkAsDelivered}
-                  >
-                    {isDeliveredPending ? "Processing..." : "Mark As Delivered"}
-                  </Button>
-                </div>
-              )}
+                {deliveredAt && (
+                  <Badge variant="secondary">
+                    Delivered on {formatDateTime(deliveredAt).dateTime}
+                  </Badge>
+                )}
+
+                {!shippedAt && status !== "CANCELLED" && (
+                  <Badge variant="outline">Not shipped yet</Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
+
+          {(canShip || canDeliver || canCancel) && (
+            <Card>
+              <CardContent className="flex flex-wrap gap-2 p-4">
+                {canShip && (
+                  <Button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => runAction(() => shipOrder(order.id))}
+                  >
+                    Mark as shipped
+                  </Button>
+                )}
+
+                {canDeliver && (
+                  <Button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => runAction(() => deliverOrder(order.id))}
+                  >
+                    {isCashOnDelivery && !paidAt
+                      ? "Mark as delivered (cash collected)"
+                      : "Mark as delivered"}
+                  </Button>
+                )}
+
+                {canCancel && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isPending}
+                    onClick={() => runAction(() => cancelOrder(order.id))}
+                  >
+                    Cancel order
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardContent className="space-y-4 p-4">

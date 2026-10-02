@@ -10,10 +10,19 @@ import { auth, signIn, signOut } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { getSafeCallbackUrl } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 
+import { SERVER_URL } from "@/lib/constants";
+import { sendEmail } from "@/lib/email";
+import { passwordResetEmail, verifyEmailEmail } from "@/lib/email-templates";
+import { assertRateLimit, getClientIp } from "@/lib/rate-limit";
+import { consumeToken, createToken } from "@/lib/tokens";
+
 import {
+  forgotPasswordSchema,
   paymentMethodSchema,
+  resetPasswordSchema,
   shippingAddressSchema,
   signInFormSchema,
   signUpFormSchema,
@@ -22,6 +31,19 @@ import {
 import { PAGE_SIZE } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "../generated/prisma/client";
+
+const HOUR = 60 * 60 * 1000;
+
+const sendVerificationEmail = async (email: string) => {
+  const token = await createToken("verify", email, 24 * HOUR);
+
+  const verifyUrl = `${SERVER_URL}/verify-email?${new URLSearchParams({
+    email,
+    token,
+  })}`;
+
+  await sendEmail(verifyEmailEmail(email, verifyUrl));
+};
 
 const persistGuestCart = async (userId: string) => {
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -52,24 +74,6 @@ const persistGuestCart = async (userId: string) => {
   });
 };
 
-// Reduce a callbackUrl to a same-site path to prevent open redirects
-const getSafeCallbackUrl = (value: FormDataEntryValue | null) => {
-  if (typeof value !== "string" || value.length === 0) return "/";
-
-  let url: URL;
-
-  try {
-    url = new URL(value, "http://localhost");
-  } catch {
-    return "/";
-  }
-
-  if (url.protocol !== "http:" && url.protocol !== "https:") return "/";
-
-  // Collapse leading slashes so "//evil.com" can't become a protocol-relative URL
-  return `${url.pathname.replace(/^\/+/, "/")}${url.search}${url.hash}`;
-};
-
 export async function signInWithCredentials(
   _prevState: unknown,
   formData: FormData,
@@ -80,6 +84,18 @@ export async function signInWithCredentials(
     user = signInFormSchema.parse({
       email: formData.get("email"),
       password: formData.get("password"),
+    });
+
+    await assertRateLimit({
+      key: `signin-ip:${await getClientIp()}`,
+      limit: 20,
+      windowMs: 15 * 60 * 1000,
+    });
+
+    await assertRateLimit({
+      key: `signin-email:${user.email.toLowerCase()}`,
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
     });
 
     // Password is verified once, in the Credentials provider's authorize()
@@ -132,6 +148,12 @@ export async function signUp(_prevState: unknown, formData: FormData) {
       confirmPassword: formData.get("confirmPassword"),
     });
 
+    await assertRateLimit({
+      key: `signup-ip:${await getClientIp()}`,
+      limit: 5,
+      windowMs: HOUR,
+    });
+
     const existingUser = await prisma.user.findUnique({
       where: {
         email: user.email,
@@ -156,6 +178,8 @@ export async function signUp(_prevState: unknown, formData: FormData) {
     });
 
     await persistGuestCart(createdUser.id);
+
+    await sendVerificationEmail(createdUser.email);
   } catch (error) {
     return {
       success: false,
@@ -459,6 +483,161 @@ export async function updateUser(user: z.infer<typeof updateUserSchema>) {
     return {
       success: true,
       message: "User updated successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+const RESET_REQUESTED_MESSAGE =
+  "If an account exists for that email, we've sent a link to reset your password.";
+
+// Always answers the same way so it can't be used to check which emails exist
+export async function requestPasswordReset(
+  _prevState: unknown,
+  formData: FormData,
+) {
+  try {
+    const { email } = forgotPasswordSchema.parse({
+      email: formData.get("email"),
+    });
+
+    await assertRateLimit({
+      key: `reset-ip:${await getClientIp()}`,
+      limit: 5,
+      windowMs: HOUR,
+    });
+
+    await assertRateLimit({
+      key: `reset-email:${email.toLowerCase()}`,
+      limit: 3,
+      windowMs: HOUR,
+    });
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        email: true,
+        password: true,
+      },
+    });
+
+    if (user?.password) {
+      const token = await createToken("reset", user.email, HOUR);
+
+      const resetUrl = `${SERVER_URL}/reset-password?${new URLSearchParams({
+        email: user.email,
+        token,
+      })}`;
+
+      await sendEmail(passwordResetEmail(user.email, resetUrl));
+    }
+
+    return {
+      success: true,
+      message: RESET_REQUESTED_MESSAGE,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+export async function resetPassword(_prevState: unknown, formData: FormData) {
+  try {
+    const data = resetPasswordSchema.parse({
+      email: formData.get("email"),
+      token: formData.get("token"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword"),
+    });
+
+    await assertRateLimit({
+      key: `reset-submit-ip:${await getClientIp()}`,
+      limit: 10,
+      windowMs: HOUR,
+    });
+
+    const isValid = await consumeToken("reset", data.email, data.token);
+
+    if (!isValid) {
+      return {
+        success: false,
+        message:
+          "This reset link is invalid or has expired. Request a new one.",
+      };
+    }
+
+    // Following the emailed link also proves the address belongs to them
+    await prisma.user.update({
+      where: {
+        email: data.email,
+      },
+      data: {
+        password: await hash(data.password, 10),
+        emailVerified: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: "Your password has been reset. You can now sign in.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+export async function resendVerificationEmail() {
+  try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      throw new Error("You must be signed in");
+    }
+
+    await assertRateLimit({
+      key: `verify-resend:${session.user.id}`,
+      limit: 3,
+      windowMs: HOUR,
+    });
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: session.user.id,
+      },
+      select: {
+        email: true,
+        emailVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.emailVerified) {
+      return {
+        success: true,
+        message: "Your email is already confirmed.",
+      };
+    }
+
+    await sendVerificationEmail(user.email);
+
+    return {
+      success: true,
+      message: `We sent a confirmation link to ${user.email}.`,
     };
   } catch (error) {
     return {

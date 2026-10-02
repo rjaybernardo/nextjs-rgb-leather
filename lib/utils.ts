@@ -130,3 +130,21 @@ export function formUrlQuery({
     },
   );
 }
+
+// Reduce a callbackUrl to a same-site path to prevent open redirects
+export const getSafeCallbackUrl = (value: unknown) => {
+  if (typeof value !== "string" || value.length === 0) return "/";
+
+  let url: URL;
+
+  try {
+    url = new URL(value, "http://localhost");
+  } catch {
+    return "/";
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") return "/";
+
+  // Collapse leading slashes so "//evil.com" can't become a protocol-relative URL
+  return `${url.pathname.replace(/^\/+/, "/")}${url.search}${url.hash}`;
+};

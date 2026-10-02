@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { getMyOrders } from "@/lib/actions/order.actions";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
+import OrderStatusBadge from "@/components/shared/order-status-badge";
 
 export const metadata: Metadata = {
   title: "My Orders",
@@ -44,7 +45,7 @@ const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
               <TableHead>DATE</TableHead>
               <TableHead>TOTAL</TableHead>
               <TableHead>PAID</TableHead>
-              <TableHead>DELIVERED</TableHead>
+              <TableHead>STATUS</TableHead>
               <TableHead>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
@@ -63,15 +64,13 @@ const OrdersPage = async ({ searchParams }: OrdersPageProps) => {
                 </TableCell>
 
                 <TableCell>
-                  {order.isPaid && order.paidAt
+                  {order.paidAt
                     ? formatDateTime(order.paidAt).dateTime
                     : "Not paid"}
                 </TableCell>
 
                 <TableCell>
-                  {order.isDelivered && order.deliveredAt
-                    ? formatDateTime(order.deliveredAt).dateTime
-                    : "Not delivered"}
+                  <OrderStatusBadge status={order.status} />
                 </TableCell>
 
                 <TableCell>

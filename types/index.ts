@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { OrderStatus } from "@/lib/generated/prisma/enums";
+
 import {
   cartItemSchema,
   insertCartSchema,
@@ -28,10 +30,11 @@ export type OrderItem = z.infer<typeof insertOrderItemSchema>;
 export type Order = z.infer<typeof insertOrderSchema> & {
   id: string;
   createdAt: Date;
-  isPaid: boolean;
+  status: OrderStatus;
   paidAt: Date | null;
-  isDelivered: boolean;
+  shippedAt: Date | null;
   deliveredAt: Date | null;
+  cancelledAt: Date | null;
   orderitems: OrderItem[];
   user: {
     name: string;
