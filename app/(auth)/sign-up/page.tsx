@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
+import { auth, googleSignInEnabled } from "@/auth";
 import {
   Card,
   CardContent,
@@ -10,6 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+import GoogleSignInButton from "@/components/shared/auth/google-sign-in-button";
+import { getSafeCallbackUrl } from "@/lib/utils";
 
 import SignUpForm from "./signup-form";
 import SiteLogo from "@/components/shared/site-logo";
@@ -34,7 +37,7 @@ const SignUp = async ({ searchParams }: SignUpPageProps) => {
   const session = await auth();
 
   if (session) {
-    redirect(callbackUrl || "/");
+    redirect(getSafeCallbackUrl(callbackUrl));
   }
 
   return (
@@ -53,6 +56,8 @@ const SignUp = async ({ searchParams }: SignUpPageProps) => {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {googleSignInEnabled && <GoogleSignInButton callbackUrl={callbackUrl} />}
+
           <SignUpForm />
         </CardContent>
       </Card>

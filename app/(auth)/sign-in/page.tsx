@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
+import { auth, googleSignInEnabled } from "@/auth";
 import {
   Card,
   CardContent,
@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSafeCallbackUrl } from "@/lib/utils";
+
+import GoogleSignInButton from "@/components/shared/auth/google-sign-in-button";
 
 import CredentialsSignInForm from "./credentials-signin-form";
 import SiteLogo from "@/components/shared/site-logo";
@@ -54,6 +56,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {googleSignInEnabled && <GoogleSignInButton callbackUrl={callbackUrl} />}
+
           <CredentialsSignInForm />
         </CardContent>
       </Card>

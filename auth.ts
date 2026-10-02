@@ -2,11 +2,18 @@ import { compare } from "bcrypt-ts-edge";
 import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { authConfig } from "@/auth.config";
+import { persistGuestCart } from "@/lib/guest-cart";
 import { prisma } from "@/lib/prisma";
+
+// Google sign-in turns on once both credentials are set
+export const googleSignInEnabled = Boolean(
+  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
+);
 
 export const authConfigWithCredentials = {
   ...authConfig,
@@ -64,9 +71,48 @@ export const authConfigWithCredentials = {
         };
       },
     }),
+
+    ...(googleSignInEnabled
+      ? [
+          Google({
+            // Lets a customer who registered with a password sign in with
+            // Google using the same email. Safe because Google verifies
+            // email ownership, and the signIn callback rejects unverified ones.
+            allowDangerousEmailAccountLinking: true,
+            profile(profile) {
+              return {
+                id: profile.sub,
+                name: profile.name || profile.email?.split("@")[0] || "NO_NAME",
+                email: profile.email,
+                image: profile.picture,
+                // New accounts are customers; Google already confirmed the email
+                role: "user",
+                emailVerified: profile.email_verified ? new Date() : null,
+              };
+            },
+          }),
+        ]
+      : []),
   ],
 
+  events: {
+    // Password sign-in merges the guest cart in its own action
+    async signIn({ user, account }) {
+      if (account?.provider === "google" && user.id) {
+        await persistGuestCart(user.id);
+      }
+    },
+  },
+
   callbacks: {
+    signIn({ account, profile }) {
+      if (account?.provider === "google") {
+        return profile?.email_verified === true;
+      }
+
+      return true;
+    },
+
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;

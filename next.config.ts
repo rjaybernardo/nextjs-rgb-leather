@@ -7,6 +7,7 @@ const isDev = process.env.NODE_ENV === "development";
  * Content-Security-Policy without nonces (Next's inline scripts need
  * 'unsafe-inline'). Browser-side third parties:
  * - UploadThing: admin image uploads go straight to its servers
+ * - Google: sign-in redirects to accounts.google.com
  * PayMongo checkout is a full-page redirect, which CSP doesn't restrict.
  */
 const contentSecurityPolicy = [
@@ -18,7 +19,8 @@ const contentSecurityPolicy = [
   `connect-src 'self' https://*.uploadthing.com https://*.ingest.uploadthing.com https://utfs.io https://*.ufs.sh${isDev ? " ws: wss:" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // Google sign-in posts to /api/auth, which redirects to Google
+  "form-action 'self' https://accounts.google.com",
   "frame-ancestors 'none'",
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");

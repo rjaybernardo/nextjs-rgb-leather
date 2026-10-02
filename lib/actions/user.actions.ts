@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { hash } from "bcrypt-ts-edge";
 import { AuthError } from "next-auth";
@@ -18,6 +17,7 @@ import { sendEmail } from "@/lib/email";
 import { passwordResetEmail, verifyEmailEmail } from "@/lib/email-templates";
 import { assertRateLimit, getClientIp } from "@/lib/rate-limit";
 import { recordAudit } from "@/lib/audit";
+import { persistGuestCart } from "@/lib/guest-cart";
 import { consumeToken, createToken } from "@/lib/tokens";
 
 import {
@@ -45,34 +45,6 @@ const sendVerificationEmail = async (email: string) => {
   await sendEmail(await verifyEmailEmail(email, verifyUrl));
 };
 
-const persistGuestCart = async (userId: string) => {
-  const sessionCartId = (await cookies()).get("sessionCartId")?.value;
-
-  if (!sessionCartId) return;
-
-  const sessionCart = await prisma.cart.findFirst({
-    where: {
-      sessionCartId,
-    },
-  });
-
-  if (!sessionCart) return;
-
-  await prisma.cart.deleteMany({
-    where: {
-      userId,
-    },
-  });
-
-  await prisma.cart.update({
-    where: {
-      id: sessionCart.id,
-    },
-    data: {
-      userId,
-    },
-  });
-};
 
 export async function signInWithCredentials(
   _prevState: unknown,
@@ -654,4 +626,11 @@ export async function resendVerificationEmail() {
       message: formatError(error),
     };
   }
+}
+
+// Starts Google sign-in; Auth.js redirects to Google and back
+export async function signInWithGoogle(formData: FormData) {
+  await signIn("google", {
+    redirectTo: getSafeCallbackUrl(formData.get("callbackUrl")),
+  });
 }
