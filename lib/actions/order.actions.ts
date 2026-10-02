@@ -16,6 +16,7 @@ import {
 } from "@/lib/email-templates";
 import { assertRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
+import { formatId } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 import {
   insertOrderSchema,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/validators";
 import { recordAudit } from "@/lib/audit";
 import { recordStockMovement } from "@/lib/stock";
+import { checkCoupon, redeemCoupon, releaseCoupon } from "@/lib/coupons";
 import { invalidateCatalog } from "@/lib/catalog-cache";
 import { z } from "zod";
 import type { CartItem } from "@/types";
@@ -139,7 +141,33 @@ export async function createOrder(): Promise<CreateOrderResult> {
       };
     });
 
-    const prices = calcPrice(items, await getShippingSettings());
+    const shipping = await getShippingSettings();
+    const basePrices = calcPrice(items, shipping);
+
+    // Re-check the discount code against the current cart
+    let coupon: Awaited<ReturnType<typeof checkCoupon>> | null = null;
+
+    if (cart.couponCode) {
+      coupon = await checkCoupon(cart.couponCode, {
+        userId,
+        itemsPrice: basePrices.itemsPrice,
+      });
+
+      if (!coupon.ok) {
+        await prisma.cart.update({
+          where: { id: cart.id },
+          data: { items, ...basePrices, couponCode: null },
+        });
+
+        return {
+          success: false,
+          message: `${coupon.message}. We removed it; please review your order.`,
+          redirectTo: "/place-order",
+        };
+      }
+    }
+
+    const prices = coupon?.ok ? calcPrice(items, shipping, coupon.rule) : basePrices;
 
     // Also catches totals saved under older tax or shipping rules
     const pricesChanged =
@@ -177,10 +205,27 @@ export async function createOrder(): Promise<CreateOrderResult> {
       totalPrice: String(prices.totalPrice),
     });
 
+    const appliedCoupon = coupon?.ok && prices.discountPrice > 0 ? coupon.coupon : null;
+
     const insertedOrderId = await prisma.$transaction(async (tx) => {
       const insertedOrder = await tx.order.create({
-        data: order,
+        data: {
+          ...order,
+          discountPrice: prices.discountPrice,
+          couponCode: appliedCoupon?.code ?? null,
+        },
       });
+
+      // Claim one use of the code (fails cleanly if the last use was just taken)
+      if (appliedCoupon) {
+        await redeemCoupon(tx, {
+          couponId: appliedCoupon.id,
+          orderId: insertedOrder.id,
+          userId,
+          amount: prices.discountPrice,
+          perCustomerLimit: appliedCoupon.perCustomerLimit,
+        });
+      }
 
       // Decrement stock; the gte guard prevents overselling under concurrency
       for (const item of items) {
@@ -233,6 +278,8 @@ export async function createOrder(): Promise<CreateOrderResult> {
           shippingPrice: 0,
           taxPrice: 0,
           totalPrice: 0,
+          discountPrice: 0,
+          couponCode: null,
         },
       });
 
@@ -253,6 +300,8 @@ export async function createOrder(): Promise<CreateOrderResult> {
         itemsPrice: prices.itemsPrice,
         shippingPrice: prices.shippingPrice,
         taxPrice: prices.taxPrice,
+        discountPrice: prices.discountPrice,
+        couponCode: appliedCoupon?.code,
         paymentMethod: order.paymentMethod,
         orderitems: items,
         address: order.shippingAddress,
@@ -308,6 +357,7 @@ export async function getOrderById(orderId: string) {
     shippingPrice: Number(order.shippingPrice),
     taxPrice: Number(order.taxPrice),
     totalPrice: Number(order.totalPrice),
+    discountPrice: Number(order.discountPrice),
     orderitems: order.orderitems.map((item) => ({
       ...item,
       price: Number(item.price),
@@ -423,6 +473,9 @@ export async function deleteOrder(id: string) {
     const session = await assertAdmin();
 
     await prisma.$transaction(async (tx) => {
+      // Give back the discount code use before the redemption is deleted
+      await releaseCoupon(tx, id);
+
       const order = await tx.order.delete({
         where: {
           id,
@@ -549,6 +602,8 @@ export async function cancelOrder(orderId: string) {
           actorEmail: session.user.email,
         });
       }
+
+      await releaseCoupon(tx, order.id);
     });
 
     invalidateCatalog();
@@ -976,23 +1031,48 @@ export async function startPayMongoCheckout(orderId: string) {
       }
     }
 
-    const lineItems = order.orderitems.map((item) => ({
-      name: item.name,
-      amount: toCentavos(Number(item.price)),
-      currency: "PHP" as const,
-      quantity: item.qty,
-      ...(item.image.startsWith("https://") ? { images: [item.image] } : {}),
-    }));
+    type LineItem = {
+      name: string;
+      amount: number;
+      currency: "PHP";
+      quantity: number;
+      images?: string[];
+    };
 
-    const shippingPrice = Number(order.shippingPrice);
+    let lineItems: LineItem[];
 
-    if (shippingPrice > 0) {
-      lineItems.push({
-        name: "Shipping",
-        amount: toCentavos(shippingPrice),
-        currency: "PHP",
-        quantity: 1,
-      });
+    if (Number(order.discountPrice) > 0) {
+      // PayMongo line items can't be negative, so a discounted order is
+      // charged as one line at the discounted total
+      const itemCount = order.orderitems.reduce((sum, item) => sum + item.qty, 0);
+
+      lineItems = [
+        {
+          name: `Order ${formatId(order.id)}: ${itemCount} item${itemCount === 1 ? "" : "s"}${order.couponCode ? `, code ${order.couponCode}` : ""}`,
+          amount: toCentavos(Number(order.totalPrice)),
+          currency: "PHP",
+          quantity: 1,
+        },
+      ];
+    } else {
+      lineItems = order.orderitems.map((item) => ({
+        name: item.name,
+        amount: toCentavos(Number(item.price)),
+        currency: "PHP" as const,
+        quantity: item.qty,
+        ...(item.image.startsWith("https://") ? { images: [item.image] } : {}),
+      }));
+
+      const shippingPrice = Number(order.shippingPrice);
+
+      if (shippingPrice > 0) {
+        lineItems.push({
+          name: "Shipping",
+          amount: toCentavos(shippingPrice),
+          currency: "PHP",
+          quantity: 1,
+        });
+      }
     }
 
     const lineItemsTotal = lineItems.reduce(

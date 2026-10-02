@@ -21,6 +21,8 @@ import { getPaymentMethodLabel, PAYMENT_METHODS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import type { ShippingAddress } from "@/types";
 import AddressSummary from "@/components/shared/address/address-summary";
+
+import CouponForm from "./coupon-form";
 import { shippingAddressSchema } from "@/lib/validators";
 
 import PlaceOrderForm from "./place-order-form";
@@ -151,6 +153,13 @@ const PlaceOrderPage = async () => {
                 <span>{formatCurrency(cart.shippingPrice)}</span>
               </div>
 
+              {cart.discountPrice > 0 && (
+                <div className="flex justify-between text-primary">
+                  <span>Discount{cart.couponCode ? ` (${cart.couponCode})` : ""}</span>
+                  <span>−{formatCurrency(cart.discountPrice)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
                 <span>{formatCurrency(cart.totalPrice)}</span>
@@ -160,6 +169,8 @@ const PlaceOrderPage = async () => {
                 <span>Includes 12% VAT</span>
                 <span>{formatCurrency(cart.taxPrice)}</span>
               </div>
+
+              <CouponForm appliedCode={cart.couponCode ?? null} />
 
               <PlaceOrderForm />
             </CardContent>

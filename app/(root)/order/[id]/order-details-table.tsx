@@ -377,6 +377,13 @@ const OrderDetailsTable = ({
                 <div>{formatCurrency(shippingPrice)}</div>
               </div>
 
+              {order.discountPrice > 0 && (
+                <div className="flex justify-between text-primary">
+                  <div>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</div>
+                  <div>−{formatCurrency(order.discountPrice)}</div>
+                </div>
+              )}
+
               <div className="flex justify-between font-bold">
                 <div>Total</div>
                 <div>{formatCurrency(totalPrice)}</div>

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { E2E_EMAIL_DOMAIN, E2E_EMAIL_PREFIX } from "./db";
+import { E2E_COUPON_CODE, E2E_EMAIL_DOMAIN, E2E_EMAIL_PREFIX } from "./db";
 
 const productSlug = () => process.env.E2E_PRODUCT_SLUG!;
 const productName = () => process.env.E2E_PRODUCT_NAME!;
@@ -82,12 +82,22 @@ test("guest cart → sign up → checkout with COD → shipped → delivered and
     await expect(page.getByText("+639171234567")).toBeVisible();
     await expect(page.getByText("Includes 12% VAT")).toBeVisible();
 
+    // A wrong code is explained, the real one applies 10% off
+    await page.getByLabel("Have a discount code?").fill("NOPE123");
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(page.getByText("NOPE123 isn't a valid discount code")).toBeVisible();
+
+    await page.getByLabel("Have a discount code?").fill(E2E_COUPON_CODE.toLowerCase());
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(page.getByText(`Discount (${E2E_COUPON_CODE})`)).toBeVisible();
+
     await page.getByRole("button", { name: "Place Order" }).click();
     await page.waitForURL(/\/order\/[0-9a-f-]{36}$/);
     orderUrl = page.url();
 
     await expect(page.getByText("Pending", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Pay on delivery")).toBeVisible();
+    await expect(page.getByText(`Discount (${E2E_COUPON_CODE})`)).toBeVisible();
   });
 
   await test.step("admin ships the order with a courier and tracking number", async () => {
@@ -108,6 +118,11 @@ test("guest cart → sign up → checkout with COD → shipped → delivered and
 
     await expect(admin.getByText("Delivered", { exact: true }).first()).toBeVisible();
     await expect(admin.getByText(/^Paid on /)).toBeVisible();
+
+    // The code shows one use in Admin → Discounts
+    await admin.goto("/admin/discounts");
+    const couponRow = admin.getByRole("row").filter({ hasText: E2E_COUPON_CODE });
+    await expect(couponRow.getByRole("cell").nth(3)).toHaveText("1");
 
     await adminContext.close();
   });

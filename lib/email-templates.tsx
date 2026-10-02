@@ -28,6 +28,8 @@ type OrderSummary = {
   itemsPrice?: number | string;
   shippingPrice?: number | string;
   taxPrice?: number | string;
+  discountPrice?: number | string;
+  couponCode?: string | null;
   address?: EmailAddress | null;
 };
 
@@ -51,6 +53,8 @@ const emailTotals = (order: OrderSummary) => ({
   itemsPrice: toNumber(order.itemsPrice),
   shippingPrice: toNumber(order.shippingPrice),
   taxPrice: toNumber(order.taxPrice),
+  discountPrice: toNumber(order.discountPrice),
+  couponCode: order.couponCode ?? undefined,
   totalPrice: Number(order.totalPrice),
 });
 
@@ -84,6 +88,9 @@ export const orderPlacedEmail = async (to: string, order: OrderSummary): Promise
       "",
       itemLines(order),
       "",
+      ...(Number(order.discountPrice ?? 0) > 0
+        ? [`Discount${order.couponCode ? ` (${order.couponCode})` : ""}: -${formatCurrency(order.discountPrice ?? 0)}`]
+        : []),
       `Total: ${formatCurrency(order.totalPrice)} (VAT included)`,
       `Payment: ${getPaymentMethodLabel(order.paymentMethod)}`,
       "",

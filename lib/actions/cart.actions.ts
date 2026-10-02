@@ -7,13 +7,38 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { calcPrice } from "@/lib/cart-pricing";
+import { checkCoupon } from "@/lib/coupons";
 import { getShippingSettings } from "@/lib/store-settings";
-import { convertToPlainObject } from "@/lib/utils";
+import { convertToPlainObject, formatCurrency } from "@/lib/utils";
+import { assertRateLimit } from "@/lib/rate-limit";
 import { formatError } from "@/lib/utils/server";
 import { cartItemSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
 
 // Add item to cart
+/*
+ * Prices a cart, keeping its discount code only while it still applies
+ * (e.g. dropping it if the cart falls below the code's minimum order).
+ */
+async function priceCart(
+  items: CartItem[],
+  couponCode: string | null | undefined,
+  userId: string | undefined,
+) {
+  const shipping = await getShippingSettings();
+  const base = calcPrice(items, shipping);
+
+  if (!couponCode || !userId || items.length === 0) {
+    return { ...base, couponCode: null };
+  }
+
+  const check = await checkCoupon(couponCode, { userId, itemsPrice: base.itemsPrice });
+
+  return check.ok
+    ? { ...calcPrice(items, shipping, check.rule), couponCode: check.coupon.code }
+    : { ...base, couponCode: null };
+}
+
 export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
   try {
     // Get session cart ID
@@ -77,7 +102,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       }
 
       // Recalculate prices
-      const prices = calcPrice(cart.items, await getShippingSettings());
+      const prices = await priceCart(cart.items, cart.couponCode, userId);
 
       // Update cart
       await prisma.cart.update({
@@ -91,7 +116,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       });
     } else {
       // Create a new cart
-      const prices = calcPrice([item], await getShippingSettings());
+      const prices = await priceCart([item], null, userId);
 
       await prisma.cart.create({
         data: {
@@ -162,7 +187,7 @@ export async function removeItemFromCart(productId: string) {
     }
 
     // Recalculate cart prices
-    const prices = calcPrice(cart.items, await getShippingSettings());
+    const prices = await priceCart(cart.items, cart.couponCode, (await auth())?.user?.id);
 
     // Update cart in database
     await prisma.cart.update({
@@ -226,5 +251,85 @@ export async function getMyCart() {
     totalPrice: Number(cart.totalPrice),
     shippingPrice: Number(cart.shippingPrice),
     taxPrice: Number(cart.taxPrice),
+    discountPrice: Number(cart.discountPrice),
   };
+}
+
+// Checkout: apply a discount code to the signed-in customer's cart
+export async function applyCoupon(rawCode: string) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      throw new Error("Sign in to use a discount code");
+    }
+
+    await assertRateLimit({
+      key: `coupon:${userId}`,
+      limit: 15,
+      windowMs: 15 * 60 * 1000,
+    });
+
+    const cart = await getMyCart();
+
+    if (!cart || cart.items.length === 0) {
+      throw new Error("Your cart is empty");
+    }
+
+    const base = calcPrice(cart.items, await getShippingSettings());
+    const check = await checkCoupon(rawCode, { userId, itemsPrice: base.itemsPrice });
+
+    if (!check.ok) {
+      return { success: false, message: check.message };
+    }
+
+    const prices = calcPrice(cart.items, await getShippingSettings(), check.rule);
+
+    if (prices.discountPrice === 0) {
+      return {
+        success: false,
+        message: `${check.coupon.code} doesn't lower this order (shipping is already free)`,
+      };
+    }
+
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: { ...prices, couponCode: check.coupon.code },
+    });
+
+    revalidatePath("/place-order");
+    revalidatePath("/cart");
+
+    return {
+      success: true,
+      message: `${check.coupon.code} applied: you save ${formatCurrency(prices.discountPrice)}`,
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+export async function removeCoupon() {
+  try {
+    const cart = await getMyCart();
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    const prices = calcPrice(cart.items, await getShippingSettings());
+
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: { ...prices, couponCode: null },
+    });
+
+    revalidatePath("/place-order");
+    revalidatePath("/cart");
+
+    return { success: true, message: "Discount code removed" };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
 }

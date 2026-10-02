@@ -64,6 +64,8 @@ export async function markOrderPaid({
       itemsPrice: Number(order.itemsPrice),
       shippingPrice: Number(order.shippingPrice),
       taxPrice: Number(order.taxPrice),
+      discountPrice: Number(order.discountPrice),
+      couponCode: order.couponCode,
       paymentMethod: order.paymentMethod,
       orderitems: order.orderitems.map((item) => ({
         name: item.name,

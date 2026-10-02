@@ -87,3 +87,11 @@ export async function cleanUpE2eData(db: PrismaClient) {
 
   return users.length;
 }
+
+// Test discount codes; their redemptions go with the test orders above
+export const E2E_COUPON_CODE = "E2E10";
+
+export async function cleanUpE2eCoupons(db: PrismaClient) {
+  await db.couponRedemption.deleteMany({ where: { coupon: { code: { startsWith: "E2E" } } } });
+  await db.coupon.deleteMany({ where: { code: { startsWith: "E2E" } } });
+}

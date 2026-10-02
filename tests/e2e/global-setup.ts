@@ -1,4 +1,4 @@
-import { cleanUpE2eData, createTestDb } from "./db";
+import { cleanUpE2eCoupons, cleanUpE2eData, createTestDb, E2E_COUPON_CODE } from "./db";
 
 export default async function globalSetup() {
   const db = createTestDb();
@@ -6,6 +6,18 @@ export default async function globalSetup() {
   try {
     // Leftovers from an interrupted run
     await cleanUpE2eData(db);
+    await cleanUpE2eCoupons(db);
+
+    // 10% off, once per customer, for the checkout test
+    await db.coupon.create({
+      data: {
+        code: E2E_COUPON_CODE,
+        description: "Created by the e2e tests",
+        type: "PERCENT",
+        value: 10,
+        perCustomerLimit: 1,
+      },
+    });
 
     // Local runs share one IP; don't let earlier runs trip the sign-up and
     // sign-in limits (5 sign-ups per hour per IP)
@@ -17,6 +29,7 @@ export default async function globalSetup() {
           { key: { startsWith: "signin-email:" } },
           { key: { startsWith: "order:" } },
           { key: { startsWith: "newsletter:" } },
+          { key: { startsWith: "coupon:" } },
         ],
       },
     });

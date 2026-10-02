@@ -330,3 +330,50 @@ export const taxonomyNameSchema = z
   .trim()
   .min(2, "Name must be at least 2 characters")
   .max(60, "Name must be at most 60 characters");
+
+// Discount codes (admin). Dates are datetime-local values in Philippine time.
+const optionalWholeNumber = z
+  .union([z.literal(""), z.null(), z.coerce.number().int("Use a whole number").min(1, "Must be at least 1")])
+  .transform((value) => (value === "" || value === null ? null : value));
+
+const optionalAmount = z
+  .union([z.literal(""), z.null(), z.coerce.number().min(0, "Can't be negative")])
+  .transform((value) => (value === "" || value === null ? null : value));
+
+const optionalManilaDate = z
+  .string()
+  .trim()
+  .refine((value) => value === "" || !Number.isNaN(Date.parse(`${value}:00+08:00`)), "Choose a valid date and time")
+  .transform((value) => (value ? new Date(`${value}:00+08:00`) : null));
+
+export const couponSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9_-]{3,30}$/, "Use 3 to 30 letters, numbers, dashes or underscores"),
+    description: z.string().trim().max(200),
+    type: z.enum(["PERCENT", "FIXED", "FREE_SHIPPING"]),
+    value: z.coerce.number().min(0),
+    maxDiscount: optionalAmount,
+    minOrder: z.coerce.number().min(0, "Can't be negative"),
+    startsAt: optionalManilaDate,
+    endsAt: optionalManilaDate,
+    usageLimit: optionalWholeNumber,
+    perCustomerLimit: optionalWholeNumber,
+    active: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "PERCENT" && (data.value < 1 || data.value > 100)) {
+      ctx.addIssue({ code: "custom", path: ["value"], message: "Percent must be between 1 and 100" });
+    }
+
+    if (data.type === "FIXED" && data.value <= 0) {
+      ctx.addIssue({ code: "custom", path: ["value"], message: "Enter an amount above ₱0" });
+    }
+
+    if (data.startsAt && data.endsAt && data.endsAt <= data.startsAt) {
+      ctx.addIssue({ code: "custom", path: ["endsAt"], message: "End must be after the start" });
+    }
+  });

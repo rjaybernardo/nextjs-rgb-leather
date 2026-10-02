@@ -18,6 +18,7 @@ describe("calcPrice", () => {
     expect(calcPrice([], shipping)).toEqual({
       itemsPrice: 0,
       shippingPrice: 0,
+      discountPrice: 0,
       taxPrice: 0,
       totalPrice: 0,
     });

@@ -70,6 +70,8 @@ export type EmailOrderTotals = {
   itemsPrice?: number;
   shippingPrice?: number;
   taxPrice?: number;
+  discountPrice?: number;
+  couponCode?: string;
   totalPrice: number;
 };
 
@@ -115,6 +117,15 @@ export function OrderItems({ items, totals }: { items: EmailOrderItem[]; totals:
           <Column style={{ ...cell, textAlign: "right" }}>
             {totals.shippingPrice === 0 ? "Free" : formatCurrency(totals.shippingPrice)}
           </Column>
+        </Row>
+      )}
+
+      {totals.discountPrice !== undefined && totals.discountPrice > 0 && (
+        <Row>
+          <Column style={{ ...cell, color: colors.muted }}>
+            Discount{totals.couponCode ? ` (${totals.couponCode})` : ""}
+          </Column>
+          <Column style={{ ...cell, textAlign: "right" }}>−{formatCurrency(totals.discountPrice)}</Column>
         </Row>
       )}
 

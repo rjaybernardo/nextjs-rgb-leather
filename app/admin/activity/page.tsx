@@ -47,6 +47,11 @@ const ACTION_LABELS: Record<string, string> = {
   "site.page.update": "Edited page",
   "site.page.delete": "Deleted page",
   "site.subscriber.delete": "Removed subscriber",
+  "coupon.create": "Created discount code",
+  "coupon.update": "Edited discount code",
+  "coupon.pause": "Paused discount code",
+  "coupon.resume": "Resumed discount code",
+  "coupon.delete": "Deleted discount code",
 };
 
 const entityHref = (entityType: string, entityId: string | null) => {

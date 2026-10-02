@@ -41,6 +41,8 @@ export type Order = z.infer<typeof insertOrderSchema> & {
   cancelledAt: Date | null;
   courier: string | null;
   trackingNumber: string | null;
+  discountPrice: number;
+  couponCode: string | null;
   orderitems: OrderItem[];
   user: {
     name: string;
