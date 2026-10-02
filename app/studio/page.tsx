@@ -10,6 +10,7 @@ const AREAS = [
   { href: "/studio/pages", title: "Pages", text: "About, contact and policy pages, written in Markdown." },
   { href: "/studio/announcement", title: "Announcement", text: "The bar across the top of every page." },
   { href: "/studio/footer", title: "Footer & SEO", text: "Footer text, copyright, search description and share image." },
+  { href: "/studio/emails", title: "Emails", text: "Preview the order and account emails customers receive." },
   { href: "/studio/subscribers", title: "Subscribers", text: "Emails from the newsletter section." },
 ];
 

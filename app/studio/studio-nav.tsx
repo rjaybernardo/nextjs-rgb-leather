@@ -13,6 +13,7 @@ const links = [
   { title: "Pages", href: "/studio/pages" },
   { title: "Announcement", href: "/studio/announcement" },
   { title: "Footer & SEO", href: "/studio/footer" },
+  { title: "Emails", href: "/studio/emails" },
   { title: "Subscribers", href: "/studio/subscribers" },
 ];
 

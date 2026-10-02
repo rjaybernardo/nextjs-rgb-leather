@@ -61,11 +61,15 @@ export async function markOrderPaid({
     await orderPaidEmail(order.user.email, {
       id: order.id,
       totalPrice: Number(order.totalPrice),
+      itemsPrice: Number(order.itemsPrice),
+      shippingPrice: Number(order.shippingPrice),
+      taxPrice: Number(order.taxPrice),
       paymentMethod: order.paymentMethod,
       orderitems: order.orderitems.map((item) => ({
         name: item.name,
         qty: item.qty,
         price: Number(item.price),
+        image: item.image,
       })),
     }),
   );

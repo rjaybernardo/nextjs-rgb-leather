@@ -9,9 +9,17 @@ vi.mock("resend", () => ({
   },
 }));
 
-vi.mock("@/lib/site", () => ({
-  getSiteSettings: async () => ({ siteName: "RGB Leather" }),
-}));
+vi.mock("@/lib/site", async () => {
+  const { DEFAULT_SITE_SETTINGS } = await import("@/lib/site-config");
+
+  return {
+    getSiteSettings: async () => ({
+      ...DEFAULT_SITE_SETTINGS,
+      siteName: "RGB Leather",
+      contact: { email: "help@rgbleather.ph", phone: "", address: "" },
+    }),
+  };
+});
 
 vi.mock("@sentry/nextjs", () => ({
   captureException: (...args: unknown[]) => captureException(...args),
@@ -78,6 +86,13 @@ describe("sendEmail", () => {
     expect(payload.subject).toContain("order");
     expect(payload.text).toContain("₱1,449.00");
     expect(payload.text).toContain("Pay in cash when your order arrives");
+
+    // Branded HTML alongside the plain text
+    expect(payload.html).toContain("<!DOCTYPE html");
+    expect(payload.html).toContain("Thanks for your order");
+    expect(payload.html).toContain("#8A4B22");
+    expect(payload.html).toContain("help@rgbleather.ph");
+    expect(payload.html).toContain("Leather wallet");
     expect(options).toEqual({ idempotencyKey: `order-placed/${order.id}` });
   });
 

@@ -250,8 +250,12 @@ export async function createOrder(): Promise<CreateOrderResult> {
       await orderPlacedEmail(user.email, {
         id: insertedOrderId,
         totalPrice: prices.totalPrice,
+        itemsPrice: prices.itemsPrice,
+        shippingPrice: prices.shippingPrice,
+        taxPrice: prices.taxPrice,
         paymentMethod: order.paymentMethod,
         orderitems: items,
+        address: order.shippingAddress,
       }),
     );
 
@@ -638,6 +642,7 @@ export async function shipOrder(
       await orderShippedEmail(order.user.email, order.id, {
         courier,
         trackingNumber,
+        cashOnDelivery: order.paymentMethod === "CashOnDelivery" && !order.paidAt,
       }),
     );
 

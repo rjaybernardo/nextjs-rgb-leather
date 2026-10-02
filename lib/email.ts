@@ -8,7 +8,9 @@ import { getSiteSettings } from "@/lib/site";
 export type Email = {
   to: string;
   subject: string;
+  // Plain-text version, always sent; html is the branded version
   text: string;
+  html?: string;
   // Groups emails in Resend's dashboard, e.g. "order_placed"
   category: string;
   // Stops the same email going out twice for one event (Resend keeps keys 24h)
@@ -64,6 +66,7 @@ export async function sendEmail(email: Email) {
         to: email.to,
         subject: email.subject,
         text: email.text,
+        ...(email.html ? { html: email.html } : {}),
         ...(process.env.EMAIL_REPLY_TO
           ? { replyTo: process.env.EMAIL_REPLY_TO }
           : {}),
