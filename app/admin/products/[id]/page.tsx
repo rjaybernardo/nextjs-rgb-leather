@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 
 import ProductForm from "@/components/shared/admin/product-form";
 import { getProductById } from "@/lib/actions/product.actions";
+import { getTaxonomyOptions } from "@/lib/actions/taxonomy.actions";
+
+import StockHistory from "./stock-history";
 
 export const metadata: Metadata = {
   title: "Update product",
@@ -15,7 +18,10 @@ const UpdateProductPage = async (props: {
 }) => {
   const { id } = await props.params;
 
-  const product = await getProductById(id);
+  const [product, options] = await Promise.all([
+    getProductById(id),
+    getTaxonomyOptions(),
+  ]);
 
   if (!product) {
     return notFound();
@@ -25,7 +31,15 @@ const UpdateProductPage = async (props: {
     <div className="mx-auto max-w-5xl space-y-8">
       <h1 className="h2-bold">Update Product</h1>
 
-      <ProductForm type="Update" product={product} productId={product.id} />
+      <ProductForm
+        type="Update"
+        product={product}
+        productId={product.id}
+        categories={options.categories}
+        brands={options.brands}
+      />
+
+      <StockHistory productId={product.id} />
     </div>
   );
 };

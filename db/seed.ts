@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
+import slugify from "slugify";
+
 import sampleData from "./sample-data";
 
 async function main() {
@@ -15,9 +17,36 @@ async function main() {
   await prisma.verificationToken.deleteMany();
   await prisma.user.deleteMany();
 
-  await prisma.product.createMany({
-    data: sampleData.products,
-  });
+  await prisma.stockMovement.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.brand.deleteMany();
+
+  // Products reference Category and Brand rows; create them as needed
+  for (const { category, brand, ...product } of sampleData.products) {
+    await prisma.product.create({
+      data: {
+        ...product,
+        category: {
+          connectOrCreate: {
+            where: { slug: slugify(category, { lower: true, strict: true }) },
+            create: {
+              name: category,
+              slug: slugify(category, { lower: true, strict: true }),
+            },
+          },
+        },
+        brand: {
+          connectOrCreate: {
+            where: { slug: slugify(brand, { lower: true, strict: true }) },
+            create: {
+              name: brand,
+              slug: slugify(brand, { lower: true, strict: true }),
+            },
+          },
+        },
+      },
+    });
+  }
 
   await prisma.user.createMany({
     data: sampleData.users,

@@ -17,6 +17,7 @@ import { SERVER_URL } from "@/lib/constants";
 import { sendEmail } from "@/lib/email";
 import { passwordResetEmail, verifyEmailEmail } from "@/lib/email-templates";
 import { assertRateLimit, getClientIp } from "@/lib/rate-limit";
+import { recordAudit } from "@/lib/audit";
 import { consumeToken, createToken } from "@/lib/tokens";
 
 import {
@@ -388,12 +389,40 @@ export async function getAllUsers({
 // Delete user by ID
 export async function deleteUser(id: string) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
-    await prisma.user.delete({
+    if (id === session.user.id) {
+      throw new Error("You can't delete your own account");
+    }
+
+    // Orders cascade from users, so deleting a customer would erase sales history
+    const orderCount = await prisma.order.count({
+      where: {
+        userId: id,
+      },
+    });
+
+    if (orderCount > 0) {
+      throw new Error(
+        `This customer has ${orderCount} order${orderCount === 1 ? "" : "s"} and can't be deleted`,
+      );
+    }
+
+    const deleted = await prisma.user.delete({
       where: {
         id,
       },
+      select: {
+        email: true,
+      },
+    });
+
+    await recordAudit({
+      actor: session,
+      action: "user.delete",
+      entityType: "user",
+      entityId: id,
+      details: { email: deleted.email },
     });
 
     revalidatePath("/admin/users");
@@ -413,9 +442,28 @@ export async function deleteUser(id: string) {
 // Update user
 export async function updateUser(user: z.infer<typeof updateUserSchema>) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
     const { id, name, role } = updateUserSchema.parse(user);
+
+    if (id === session.user.id && role !== "admin") {
+      throw new Error("You can't remove your own admin access");
+    }
+
+    const before = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        name: true,
+        role: true,
+        email: true,
+      },
+    });
+
+    if (!before) {
+      throw new Error("User not found");
+    }
 
     await prisma.user.update({
       where: {
@@ -424,6 +472,18 @@ export async function updateUser(user: z.infer<typeof updateUserSchema>) {
       data: {
         name,
         role,
+      },
+    });
+
+    await recordAudit({
+      actor: session,
+      action: before.role !== role ? "user.role.change" : "user.update",
+      entityType: "user",
+      entityId: id,
+      details: {
+        email: before.email,
+        ...(before.role !== role ? { role: { before: before.role, after: role } } : {}),
+        ...(before.name !== name ? { name: { before: before.name, after: name } } : {}),
       },
     });
 

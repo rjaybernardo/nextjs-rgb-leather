@@ -49,14 +49,23 @@ export const orderPaidEmail = (to: string, order: OrderSummary): Email => ({
   ].join("\n"),
 });
 
-export const orderShippedEmail = (to: string, orderId: string): Email => ({
+export const orderShippedEmail = (
+  to: string,
+  orderId: string,
+  shipment: { courier: string; trackingNumber?: string },
+): Email => ({
   to,
   subject: `${APP_NAME}: order ${formatId(orderId)} has shipped`,
   text: [
-    "Your order is on its way.",
+    `Your order is on its way with ${shipment.courier}.`,
+    shipment.trackingNumber
+      ? `Tracking number: ${shipment.trackingNumber}`
+      : "",
     "",
     orderUrl(orderId),
-  ].join("\n"),
+  ]
+    .filter((line, index) => line !== "" || index === 2)
+    .join("\n"),
 });
 
 export const orderCancelledEmail = (to: string, orderId: string): Email => ({

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import ProductForm from "@/components/shared/admin/product-form";
+import { getTaxonomyOptions } from "@/lib/actions/taxonomy.actions";
 import { requireAdmin } from "@/lib/auth-guard";
 
 export const metadata: Metadata = {
@@ -9,6 +10,8 @@ export const metadata: Metadata = {
 
 export default async function CreateProductPage() {
   await requireAdmin();
+
+  const { categories, brands } = await getTaxonomyOptions();
 
   return (
     <div className="space-y-8">
@@ -19,7 +22,7 @@ export default async function CreateProductPage() {
         </p>
       </div>
 
-      <ProductForm type="Create" />
+      <ProductForm type="Create" categories={categories} brands={brands} />
     </div>
   );
 }

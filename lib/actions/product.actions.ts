@@ -10,34 +10,27 @@ import { convertToPlainObject } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 import { insertProductSchema, updateProductSchema } from "@/lib/validators";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { recordAudit } from "@/lib/audit";
+import { recordStockMovement } from "@/lib/stock";
+import { productInclude, toProduct } from "@/lib/product-mapper";
 
 export async function getLatestProducts() {
   const data = await prisma.product.findMany({
     take: LATEST_PRODUCTS_LIMIT,
     orderBy: { createdAt: "desc" },
+    include: productInclude,
   });
 
-  const plainData = convertToPlainObject(data);
-
-  return plainData.map((product) => ({
-    ...product,
-    price: Number(product.price),
-    rating: Number(product.rating),
-  }));
+  return data.map(toProduct);
 }
 
 export async function getProductBySlug(slug: string) {
   const product = await prisma.product.findUnique({
     where: { slug },
+    include: productInclude,
   });
 
-  if (!product) return null;
-
-  return {
-    ...convertToPlainObject(product),
-    price: Number(product.price),
-    rating: Number(product.rating),
-  };
+  return product ? toProduct(product) : null;
 }
 
 // Get single product by id
@@ -46,15 +39,10 @@ export async function getProductById(productId: string) {
 
   const product = await prisma.product.findUnique({
     where: { id: productId },
+    include: productInclude,
   });
 
-  if (!product) return null;
-
-  return {
-    ...convertToPlainObject(product),
-    price: Number(product.price),
-    rating: Number(product.rating),
-  };
+  return product ? toProduct(product) : null;
 }
 
 export type ProductSort = "newest" | "lowest" | "highest" | "rating";
@@ -108,12 +96,12 @@ export async function getAllProducts({
       ? {
           OR: [
             { name: { contains: query, mode: "insensitive" } },
-            { brand: { contains: query, mode: "insensitive" } },
-            { category: { contains: query, mode: "insensitive" } },
+            { brand: { name: { contains: query, mode: "insensitive" } } },
+            { category: { name: { contains: query, mode: "insensitive" } } },
           ],
         }
       : {}),
-    ...(category && category !== "all" ? { category } : {}),
+    ...(category && category !== "all" ? { category: { slug: category } } : {}),
     ...(priceRange ? { price: priceRange } : {}),
     ...(Number.isFinite(minRating) && minRating > 0
       ? { rating: { gte: minRating } }
@@ -129,37 +117,40 @@ export async function getAllProducts({
       orderBy,
       skip: (page - 1) * limit,
       take: limit,
+      include: productInclude,
     }),
     prisma.product.count({ where }),
   ]);
 
-  const plainData = convertToPlainObject(data);
-
   return {
-    data: plainData.map((product) => ({
-      ...product,
-      price: Number(product.price),
-      rating: Number(product.rating),
-    })),
+    data: data.map(toProduct),
     totalPages: Math.ceil(dataCount / limit),
     totalCount: dataCount,
   };
 }
 
-// Categories with how many products each has, for navigation and filters
+// Categories that have products, with counts, for navigation and filters
 export async function getAllCategories() {
-  const groups = await prisma.product.groupBy({
-    by: ["category"],
-    _count: true,
+  const categories = await prisma.category.findMany({
     orderBy: {
-      category: "asc",
+      name: "asc",
+    },
+    include: {
+      _count: {
+        select: {
+          products: true,
+        },
+      },
     },
   });
 
-  return groups.map((group) => ({
-    category: group.category,
-    count: group._count,
-  }));
+  return categories
+    .filter((category) => category._count.products > 0)
+    .map((category) => ({
+      name: category.name,
+      slug: category.slug,
+      count: category._count.products,
+    }));
 }
 
 // Featured products that have a banner image, for the home carousel
@@ -187,7 +178,7 @@ export async function getFeaturedProducts() {
 
 export async function deleteProduct(id: string) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
     const productExists = await prisma.product.findFirst({
       where: { id },
@@ -209,6 +200,14 @@ export async function deleteProduct(id: string) {
       where: { id },
     });
 
+    await recordAudit({
+      actor: session,
+      action: "product.delete",
+      entityType: "product",
+      entityId: id,
+      details: { name: productExists.name },
+    });
+
     revalidatePath("/admin/products");
 
     return {
@@ -225,12 +224,31 @@ export async function deleteProduct(id: string) {
 
 export async function createProduct(data: z.input<typeof insertProductSchema>) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
     const product = insertProductSchema.parse(data);
 
-    await prisma.product.create({
-      data: product,
+    const created = await prisma.$transaction(async (tx) => {
+      const newProduct = await tx.product.create({
+        data: product,
+      });
+
+      await recordStockMovement(tx, {
+        productId: newProduct.id,
+        change: newProduct.stock,
+        reason: "PRODUCT_CREATED",
+        actorEmail: session.user.email,
+      });
+
+      return newProduct;
+    });
+
+    await recordAudit({
+      actor: session,
+      action: "product.create",
+      entityType: "product",
+      entityId: created.id,
+      details: { name: created.name },
     });
 
     revalidatePath("/admin/products");
@@ -249,7 +267,7 @@ export async function createProduct(data: z.input<typeof insertProductSchema>) {
 
 export async function updateProduct(data: z.input<typeof updateProductSchema>) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
     const product = updateProductSchema.parse(data);
 
@@ -263,12 +281,59 @@ export async function updateProduct(data: z.input<typeof updateProductSchema>) {
 
     const { id, ...updateData } = product;
 
-    await prisma.product.update({
-      where: { id },
-      data: updateData,
+    const stockChange = updateData.stock - productExists.stock;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id },
+        data: updateData,
+      });
+
+      await recordStockMovement(tx, {
+        productId: id,
+        change: stockChange,
+        reason: "ADMIN_ADJUSTMENT",
+        actorEmail: session.user.email,
+      });
+    });
+
+    // Note which fields changed, without copying long descriptions
+    const changedFields = (
+      Object.keys(updateData) as (keyof typeof updateData)[]
+    ).filter(
+      (key) =>
+        JSON.stringify(updateData[key]) !==
+        JSON.stringify(
+          key === "price"
+            ? Number(productExists.price)
+            : productExists[key as keyof typeof productExists],
+        ),
+    );
+
+    await recordAudit({
+      actor: session,
+      action: "product.update",
+      entityType: "product",
+      entityId: id,
+      details: {
+        name: updateData.name,
+        changedFields,
+        ...(stockChange !== 0
+          ? { stock: { before: productExists.stock, after: updateData.stock } }
+          : {}),
+        ...(changedFields.includes("price")
+          ? {
+              price: {
+                before: Number(productExists.price),
+                after: updateData.price,
+              },
+            }
+          : {}),
+      },
     });
 
     revalidatePath("/admin/products");
+    revalidatePath(`/product/${updateData.slug}`);
 
     return {
       success: true,

@@ -45,7 +45,10 @@ export async function generateMetadata({
 }: SearchPageProps): Promise<Metadata> {
   const { q, category } = await searchParams;
 
-  const title = [q && `"${q}"`, category].filter(Boolean).join(" in ");
+  const categoryName =
+    category && category !== "all" ? category.replace(/-/g, " ") : undefined;
+
+  const title = [q && `"${q}"`, categoryName].filter(Boolean).join(" in ");
 
   return {
     title: title ? `Search ${title}` : "Search Products",
@@ -106,7 +109,7 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
   const activeFilters = [
     q && { label: `"${q}"`, clear: filterUrl({ q: "" }) },
     category !== "all" && {
-      label: category,
+      label: categories.find((item) => item.slug === category)?.name ?? category,
       clear: filterUrl({ category: "all" }),
     },
     price !== "all" && {
@@ -137,12 +140,12 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
             </li>
 
             {categories.map((item) => (
-              <li key={item.category}>
+              <li key={item.slug}>
                 <Link
-                  href={filterUrl({ category: item.category })}
-                  className={linkClass(category === item.category)}
+                  href={filterUrl({ category: item.slug })}
+                  className={linkClass(category === item.slug)}
                 >
-                  {item.category}{" "}
+                  {item.name}{" "}
                   <span className="text-muted-foreground">({item.count})</span>
                 </Link>
               </li>

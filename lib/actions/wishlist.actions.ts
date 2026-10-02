@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { assertRateLimit } from "@/lib/rate-limit";
-import { convertToPlainObject } from "@/lib/utils";
+import { productInclude, toProduct } from "@/lib/product-mapper";
 import { formatError } from "@/lib/utils/server";
 
 // Product ids on the signed-in user's wishlist (empty when signed out)
@@ -43,17 +43,13 @@ export async function getMyWishlist() {
       createdAt: "desc",
     },
     include: {
-      product: true,
+      product: {
+        include: productInclude,
+      },
     },
   });
 
-  return convertToPlainObject(items.map((item) => item.product)).map(
-    (product) => ({
-      ...product,
-      price: Number(product.price),
-      rating: Number(product.rating),
-    }),
-  );
+  return items.map((item) => toProduct(item.product));
 }
 
 export async function toggleWishlist(productId: string) {

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { calcPrice } from "@/lib/cart-pricing";
+import { getShippingSettings } from "@/lib/store-settings";
 import { getUserById } from "@/lib/actions/user.actions";
 import { assertAdmin, isAdmin, requireAdmin } from "@/lib/auth-guard";
 import { sendEmail } from "@/lib/email";
@@ -16,9 +17,21 @@ import {
 import { assertRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
-import { insertOrderSchema, shippingAddressSchema } from "@/lib/validators";
+import {
+  insertOrderSchema,
+  shipmentSchema,
+  shippingAddressSchema,
+} from "@/lib/validators";
+import { recordAudit } from "@/lib/audit";
+import { recordStockMovement } from "@/lib/stock";
+import { z } from "zod";
 import type { CartItem } from "@/types";
-import { PAGE_SIZE, PAYMENT_METHODS, SERVER_URL } from "@/lib/constants";
+import {
+  LOW_STOCK_THRESHOLD,
+  PAGE_SIZE,
+  PAYMENT_METHODS,
+  SERVER_URL,
+} from "@/lib/constants";
 import { syncPayMongoPayment } from "@/lib/order-payment";
 import {
   createCheckoutSession,
@@ -125,7 +138,7 @@ export async function createOrder(): Promise<CreateOrderResult> {
       };
     });
 
-    const prices = calcPrice(items);
+    const prices = calcPrice(items, await getShippingSettings());
 
     // Also catches totals saved under older tax or shipping rules
     const pricesChanged =
@@ -187,6 +200,14 @@ export async function createOrder(): Promise<CreateOrderResult> {
         if (count === 0) {
           throw new Error(`Not enough stock for ${item.name}`);
         }
+
+        await recordStockMovement(tx, {
+          productId: item.productId,
+          change: -item.qty,
+          reason: "ORDER_PLACED",
+          orderId: insertedOrder.id,
+          actorEmail: user.email,
+        });
       }
 
       await tx.orderItem.createMany({
@@ -391,7 +412,7 @@ const STOCK_HELD_STATUSES = ["PENDING", "PAID"] as const;
 // Delete Order (admin); returns stock if the order hadn't shipped
 export async function deleteOrder(id: string) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
     await prisma.$transaction(async (tx) => {
       const order = await tx.order.delete({
@@ -417,8 +438,23 @@ export async function deleteOrder(id: string) {
               },
             },
           });
+
+          await recordStockMovement(tx, {
+            productId: item.productId,
+            change: item.qty,
+            reason: "ORDER_DELETED",
+            orderId: order.id,
+            actorEmail: session.user.email,
+          });
         }
       }
+    });
+
+    await recordAudit({
+      actor: session,
+      action: "order.delete",
+      entityType: "order",
+      entityId: id,
     });
 
     revalidatePath("/admin/orders");
@@ -458,7 +494,8 @@ export async function cancelOrder(orderId: string) {
       },
     });
 
-    const canManage = order?.userId === session.user.id || (await isAdmin());
+    const isOwner = order?.userId === session.user.id;
+    const canManage = isOwner || (await isAdmin());
 
     if (!order || !canManage) {
       throw new Error("Order not found");
@@ -493,8 +530,25 @@ export async function cancelOrder(orderId: string) {
             },
           },
         });
+
+        await recordStockMovement(tx, {
+          productId: item.productId,
+          change: item.qty,
+          reason: "ORDER_CANCELLED",
+          orderId: order.id,
+          actorEmail: session.user.email,
+        });
       }
     });
+
+    if (!isOwner) {
+      await recordAudit({
+        actor: session,
+        action: "order.cancel",
+        entityType: "order",
+        entityId: order.id,
+      });
+    }
 
     await sendEmail(orderCancelledEmail(order.user.email, order.id));
 
@@ -515,9 +569,13 @@ export async function cancelOrder(orderId: string) {
 }
 
 // Mark as shipped (admin): paid online orders, or COD orders not yet paid
-export async function shipOrder(orderId: string) {
+export async function shipOrder(
+  orderId: string,
+  shipment: z.input<typeof shipmentSchema>,
+) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
+    const { courier, trackingNumber } = shipmentSchema.parse(shipment);
 
     const order = await prisma.order.findUnique({
       where: {
@@ -555,10 +613,25 @@ export async function shipOrder(orderId: string) {
       data: {
         status: "SHIPPED",
         shippedAt: new Date(),
+        courier,
+        trackingNumber: trackingNumber ?? null,
       },
     });
 
-    await sendEmail(orderShippedEmail(order.user.email, order.id));
+    await recordAudit({
+      actor: session,
+      action: "order.ship",
+      entityType: "order",
+      entityId: order.id,
+      details: { courier, trackingNumber: trackingNumber ?? null },
+    });
+
+    await sendEmail(
+      orderShippedEmail(order.user.email, order.id, {
+        courier,
+        trackingNumber,
+      }),
+    );
 
     revalidatePath(`/order/${orderId}`);
     revalidatePath("/admin/orders");
@@ -575,10 +648,58 @@ export async function shipOrder(orderId: string) {
   }
 }
 
+// Correct the courier or tracking number after shipping (admin)
+export async function updateOrderTracking(
+  orderId: string,
+  shipment: z.input<typeof shipmentSchema>,
+) {
+  try {
+    const session = await assertAdmin();
+    const { courier, trackingNumber } = shipmentSchema.parse(shipment);
+
+    const { count } = await prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: {
+          in: ["SHIPPED", "DELIVERED"],
+        },
+      },
+      data: {
+        courier,
+        trackingNumber: trackingNumber ?? null,
+      },
+    });
+
+    if (count === 0) {
+      throw new Error("Only shipped orders have tracking details");
+    }
+
+    await recordAudit({
+      actor: session,
+      action: "order.tracking.update",
+      entityType: "order",
+      entityId: orderId,
+      details: { courier, trackingNumber: trackingNumber ?? null },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+
+    return {
+      success: true,
+      message: "Tracking details updated",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
 // Mark as delivered (admin); for COD this also records the cash payment
 export async function deliverOrder(orderId: string) {
   try {
-    await assertAdmin();
+    const session = await assertAdmin();
 
     const order = await prisma.order.findUnique({
       where: {
@@ -616,6 +737,14 @@ export async function deliverOrder(orderId: string) {
       },
     });
 
+    await recordAudit({
+      actor: session,
+      action: "order.deliver",
+      entityType: "order",
+      entityId: orderId,
+      details: { cashCollected: collectCash },
+    });
+
     revalidatePath(`/order/${orderId}`);
     revalidatePath("/admin/orders");
 
@@ -633,10 +762,16 @@ export async function deliverOrder(orderId: string) {
   }
 }
 
-type SalesDataType = {
-  month: string;
-  totalSales: number;
-}[];
+// Revenue counts orders that were paid and not cancelled (cancelled-after-
+// payment orders are awaiting a refund)
+const REVENUE_ORDER_WHERE = {
+  paidAt: {
+    not: null,
+  },
+  status: {
+    not: "CANCELLED",
+  },
+} satisfies Prisma.OrderWhereInput;
 
 // Get sales data and order summary
 export async function getOrderSummary() {
@@ -644,33 +779,82 @@ export async function getOrderSummary() {
 
   const [
     ordersCount,
+    paidOrdersCount,
     productsCount,
     usersCount,
     totalSalesResult,
     salesDataRaw,
+    topProductsRaw,
+    categorySalesRaw,
+    lowStock,
     latestOrders,
   ] = await Promise.all([
-    prisma.order.count(),
+    prisma.order.count({
+      where: {
+        status: {
+          not: "CANCELLED",
+        },
+      },
+    }),
+    prisma.order.count({ where: REVENUE_ORDER_WHERE }),
     prisma.product.count(),
     prisma.user.count(),
     prisma.order.aggregate({
+      where: REVENUE_ORDER_WHERE,
       _sum: {
         totalPrice: true,
       },
     }),
-    prisma.$queryRaw<
-      Array<{
-        month: string;
-        totalSales: Prisma.Decimal;
-      }>
-    >`
+    // Last 12 months of revenue, by the month the payment came in
+    prisma.$queryRaw<{ month: string; totalSales: Prisma.Decimal }[]>`
       SELECT
-        to_char("createdAt", 'MM/YY') AS "month",
+        to_char(date_trunc('month', "paidAt"), 'Mon YY') AS "month",
         SUM("totalPrice") AS "totalSales"
       FROM "Order"
-      GROUP BY to_char("createdAt", 'MM/YY')
-      ORDER BY MIN("createdAt") ASC
+      WHERE "paidAt" IS NOT NULL
+        AND "status" <> 'CANCELLED'
+        AND "paidAt" >= date_trunc('month', now()) - interval '11 months'
+      GROUP BY date_trunc('month', "paidAt")
+      ORDER BY date_trunc('month', "paidAt") ASC
     `,
+    prisma.$queryRaw<
+      { productId: string; name: string; qty: bigint; revenue: Prisma.Decimal }[]
+    >`
+      SELECT oi."productId", max(oi."name") AS "name",
+        SUM(oi."qty") AS "qty", SUM(oi."qty" * oi."price") AS "revenue"
+      FROM "OrderItem" oi
+      JOIN "Order" o ON o."id" = oi."orderId"
+      WHERE o."paidAt" IS NOT NULL AND o."status" <> 'CANCELLED'
+      GROUP BY oi."productId"
+      ORDER BY "revenue" DESC
+      LIMIT 5
+    `,
+    prisma.$queryRaw<{ category: string; revenue: Prisma.Decimal }[]>`
+      SELECT c."name" AS "category", SUM(oi."qty" * oi."price") AS "revenue"
+      FROM "OrderItem" oi
+      JOIN "Order" o ON o."id" = oi."orderId"
+      JOIN "Product" p ON p."id" = oi."productId"
+      JOIN "Category" c ON c."id" = p."categoryId"
+      WHERE o."paidAt" IS NOT NULL AND o."status" <> 'CANCELLED'
+      GROUP BY c."name"
+      ORDER BY "revenue" DESC
+    `,
+    prisma.product.findMany({
+      where: {
+        stock: {
+          lte: LOW_STOCK_THRESHOLD,
+        },
+      },
+      orderBy: {
+        stock: "asc",
+      },
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+      },
+      take: 10,
+    }),
     prisma.order.findMany({
       orderBy: {
         createdAt: "desc",
@@ -688,18 +872,29 @@ export async function getOrderSummary() {
 
   const totalSales = Number(totalSalesResult._sum.totalPrice ?? 0);
 
-  const salesData: SalesDataType = salesDataRaw.map((entry) => ({
-    month: entry.month,
-    totalSales: Number(entry.totalSales),
-  }));
-
   return {
     ordersCount,
+    paidOrdersCount,
     productsCount,
     usersCount,
     totalSales,
+    averageOrderValue: paidOrdersCount > 0 ? totalSales / paidOrdersCount : 0,
+    salesData: salesDataRaw.map((entry) => ({
+      month: entry.month,
+      totalSales: Number(entry.totalSales),
+    })),
+    topProducts: topProductsRaw.map((entry) => ({
+      productId: entry.productId,
+      name: entry.name,
+      qty: Number(entry.qty),
+      revenue: Number(entry.revenue),
+    })),
+    categorySales: categorySalesRaw.map((entry) => ({
+      category: entry.category,
+      revenue: Number(entry.revenue),
+    })),
+    lowStock,
     latestOrders,
-    salesData,
   };
 }
 

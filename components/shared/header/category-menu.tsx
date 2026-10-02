@@ -39,17 +39,17 @@ const CategoryMenu = async () => {
         {categories.length > 0 && <DropdownMenuSeparator />}
 
         <DropdownMenuGroup>
-          {categories.map(({ category }) => (
+          {categories.map(({ name, slug }) => (
             <DropdownMenuItem
-              key={category}
+              key={slug}
               render={
                 <Link
-                  href={`/search?${new URLSearchParams({ category })}`}
+                  href={`/search?${new URLSearchParams({ category: slug })}`}
                   className="w-full"
                 />
               }
             >
-              {category}
+              {name}
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>

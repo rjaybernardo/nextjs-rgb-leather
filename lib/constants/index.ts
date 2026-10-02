@@ -72,9 +72,9 @@ export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
 export const productDefaultValues = {
   name: "",
   slug: "",
-  category: "",
+  categoryId: "",
   images: [],
-  brand: "",
+  brandId: "",
   description: "",
   price: "0",
   stock: 0,
@@ -84,9 +84,21 @@ export const productDefaultValues = {
   banner: null,
 };
 
-export const USER_ROLES = process.env.USER_ROLES
-  ? process.env.USER_ROLES.split(",").map((role) => role.trim())
-  : ["admin", "user"];
+// Matches the Role enum in prisma/schema.prisma
+export const USER_ROLES = ["user", "admin"] as const;
 
 // Show an "Only N left" badge at or below this stock level
 export const LOW_STOCK_THRESHOLD = 5;
+
+// Couriers offered when marking an order shipped
+export const COURIERS = [
+  "J&T Express",
+  "LBC Express",
+  "Ninja Van",
+  "Flash Express",
+  "JRS Express",
+  "2GO Express",
+  "Lalamove",
+  "Grab Express",
+  "Other",
+] as const;

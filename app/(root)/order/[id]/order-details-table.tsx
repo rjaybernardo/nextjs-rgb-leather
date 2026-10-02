@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import AddressSummary from "@/components/shared/address/address-summary";
 import OrderStatusBadge from "@/components/shared/order-status-badge";
@@ -24,11 +24,14 @@ import {
   deliverOrder,
   shipOrder,
   startPayMongoCheckout,
+  updateOrderTracking,
 } from "@/lib/actions/order.actions";
 import { toast } from "@/components/ui/toast";
 import { getPaymentMethodLabel } from "@/lib/constants";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import type { Order, ShippingAddress } from "@/types";
+
+import ShipmentForm from "./shipment-form";
 
 type OrderDetailsTableProps = {
   order: Order;
@@ -62,7 +65,11 @@ const OrderDetailsTable = ({
     shippedAt,
     deliveredAt,
     cancelledAt,
+    courier,
+    trackingNumber,
   } = order;
+
+  const [editingTracking, setEditingTracking] = useState(false);
 
   const address = shippingAddress as ShippingAddress;
 
@@ -78,6 +85,9 @@ const OrderDetailsTable = ({
     (status === "PAID" || (status === "PENDING" && isCashOnDelivery));
 
   const canDeliver = isAdmin && status === "SHIPPED";
+
+  const canEditTracking =
+    isAdmin && (status === "SHIPPED" || status === "DELIVERED");
 
   // Back from PayMongo: confirm the payment once, then clean up the URL
   const handledReturn = useRef(false);
@@ -229,6 +239,42 @@ const OrderDetailsTable = ({
                   <Badge variant="outline">Not shipped yet</Badge>
                 )}
               </div>
+
+              {courier && (
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  <dt className="text-muted-foreground">Courier</dt>
+                  <dd>{courier}</dd>
+
+                  <dt className="text-muted-foreground">Tracking number</dt>
+                  <dd className="font-mono">
+                    {trackingNumber ?? "Not provided"}
+                  </dd>
+                </dl>
+              )}
+
+              {canEditTracking &&
+                (editingTracking ? (
+                  <ShipmentForm
+                    submitLabel="Save tracking"
+                    defaultCourier={courier}
+                    defaultTrackingNumber={trackingNumber}
+                    disabled={isPending}
+                    onSubmit={(shipment) => {
+                      runAction(() => updateOrderTracking(order.id, shipment));
+                      setEditingTracking(false);
+                    }}
+                    onCancel={() => setEditingTracking(false)}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditingTracking(true)}
+                  >
+                    Edit tracking
+                  </Button>
+                ))}
             </CardContent>
           </Card>
 
@@ -236,13 +282,13 @@ const OrderDetailsTable = ({
             <Card>
               <CardContent className="flex flex-wrap gap-2 p-4">
                 {canShip && (
-                  <Button
-                    type="button"
+                  <ShipmentForm
+                    submitLabel="Mark as shipped"
                     disabled={isPending}
-                    onClick={() => runAction(() => shipOrder(order.id))}
-                  >
-                    Mark as shipped
-                  </Button>
+                    onSubmit={(shipment) =>
+                      runAction(() => shipOrder(order.id, shipment))
+                    }
+                  />
                 )}
 
                 {canDeliver && (

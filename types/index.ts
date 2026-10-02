@@ -17,6 +17,10 @@ export type Product = z.infer<typeof insertProductSchema> & {
   createdAt: Date;
   rating: number;
   numReviews: number;
+  // Display names from the related Category and Brand rows
+  category: string;
+  categorySlug: string;
+  brand: string;
 };
 
 export type Cart = z.infer<typeof insertCartSchema>;
@@ -35,6 +39,8 @@ export type Order = z.infer<typeof insertOrderSchema> & {
   shippedAt: Date | null;
   deliveredAt: Date | null;
   cancelledAt: Date | null;
+  courier: string | null;
+  trackingNumber: string | null;
   orderitems: OrderItem[];
   user: {
     name: string;

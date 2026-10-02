@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeDollarSign, Barcode, CreditCard, Users } from "lucide-react";
+import { BadgeDollarSign, CreditCard, ReceiptText, Users } from "lucide-react";
 
 import Charts from "./charts";
 
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getOrderSummary } from "@/lib/actions/order.actions";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { formatCurrency, formatDateTime, formatNumber } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ export default async function AdminOverviewPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
 
             <BadgeDollarSign className="size-5" />
           </CardHeader>
@@ -43,20 +44,26 @@ export default async function AdminOverviewPage() {
             <div className="text-2xl font-bold">
               {formatCurrency(summary.totalSales)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Paid orders, VAT included
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales</CardTitle>
+            <CardTitle className="text-sm font-medium">Paid orders</CardTitle>
 
             <CreditCard className="size-5" />
           </CardHeader>
 
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(summary.ordersCount)}
+              {formatNumber(summary.paidOrdersCount)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              of {formatNumber(summary.ordersCount)} orders placed
+            </p>
           </CardContent>
         </Card>
 
@@ -76,15 +83,18 @@ export default async function AdminOverviewPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
+            <CardTitle className="text-sm font-medium">Average order</CardTitle>
 
-            <Barcode className="size-5" />
+            <ReceiptText className="size-5" />
           </CardHeader>
 
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(summary.productsCount)}
+              {formatCurrency(summary.averageOrderValue)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              {formatNumber(summary.productsCount)} products in the shop
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -94,7 +104,7 @@ export default async function AdminOverviewPage() {
         {/* Overview chart */}
         <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle>Overview</CardTitle>
+            <CardTitle>Revenue, last 12 months</CardTitle>
           </CardHeader>
 
           <CardContent className="pl-2">
@@ -157,6 +167,111 @@ export default async function AdminOverviewPage() {
                   </TableBody>
                 </Table>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Top products</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            {summary.topProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No paid orders yet.</p>
+            ) : (
+              <ol className="space-y-3">
+                {summary.topProducts.map((product) => (
+                  <li key={product.productId} className="flex items-baseline gap-3 text-sm">
+                    <Link
+                      href={`/admin/products/${product.productId}`}
+                      className="flex-1 truncate hover:underline"
+                    >
+                      {product.name}
+                    </Link>
+                    <span className="text-muted-foreground tabular-nums">
+                      {formatNumber(product.qty)} sold
+                    </span>
+                    <span className="w-24 text-right font-medium tabular-nums">
+                      {formatCurrency(product.revenue)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sales by category</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            {summary.categorySales.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No paid orders yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {summary.categorySales.map((entry) => (
+                  <li key={entry.category} className="space-y-1 text-sm">
+                    <div className="flex justify-between gap-2">
+                      <span className="truncate">{entry.category}</span>
+                      <span className="font-medium tabular-nums">
+                        {formatCurrency(entry.revenue)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{
+                          width: `${Math.max(
+                            2,
+                            (entry.revenue / summary.categorySales[0].revenue) * 100,
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Low stock</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            {summary.lowStock.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Every product has more than {LOW_STOCK_THRESHOLD} in stock.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {summary.lowStock.map((product) => (
+                  <li key={product.id} className="flex items-center gap-3 text-sm">
+                    <Link
+                      href={`/admin/products/${product.id}`}
+                      className="flex-1 truncate hover:underline"
+                    >
+                      {product.name}
+                    </Link>
+                    <span
+                      className={
+                        product.stock === 0
+                          ? "font-semibold text-destructive"
+                          : "font-medium tabular-nums"
+                      }
+                    >
+                      {product.stock === 0 ? "Out of stock" : `${product.stock} left`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </CardContent>
         </Card>

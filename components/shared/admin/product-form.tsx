@@ -23,17 +23,21 @@ import { productDefaultValues } from "@/lib/constants";
 import { UploadButton } from "@/lib/uploadthing";
 import type { Product } from "@/types";
 
+type Option = { id: string; name: string };
+
 type ProductFormProps = {
   type: "Create" | "Update";
   product?: Product;
   productId?: string;
+  categories: Option[];
+  brands: Option[];
 };
 
 type ProductFormValues = {
   name: string;
   slug: string;
-  category: string;
-  brand: string;
+  categoryId: string;
+  brandId: string;
   description: string;
   stock: number;
   images: string[];
@@ -46,6 +50,8 @@ export default function ProductForm({
   type,
   product,
   productId,
+  categories,
+  brands,
 }: ProductFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +70,8 @@ export default function ProductForm({
       ? {
           name: product.name,
           slug: product.slug,
-          category: product.category,
-          brand: product.brand,
+          categoryId: product.categoryId,
+          brandId: product.brandId,
           description: product.description,
           stock: Number(product.stock),
           images: product.images,
@@ -123,8 +129,8 @@ export default function ProductForm({
         id: productId,
         name: data.name,
         slug: data.slug,
-        category: data.category,
-        brand: data.brand,
+        categoryId: data.categoryId,
+        brandId: data.brandId,
         description: data.description,
         stock: data.stock,
         images: data.images,
@@ -150,8 +156,8 @@ export default function ProductForm({
     const result = await createProduct({
       name: data.name,
       slug: data.slug,
-      category: data.category,
-      brand: data.brand,
+      categoryId: data.categoryId,
+      brandId: data.brandId,
       description: data.description,
       stock: data.stock,
       images: data.images,
@@ -306,32 +312,63 @@ export default function ProductForm({
 
             {/* Category & Brand */}
             <div className="flex flex-col gap-5 md:flex-row">
-              <Field data-invalid={!!errors.category} className="w-full">
-                <FieldLabel htmlFor="category">Category</FieldLabel>
+              <Field data-invalid={!!errors.categoryId} className="w-full">
+                <FieldLabel htmlFor="categoryId">Category</FieldLabel>
 
-                <Input
-                  id="category"
-                  placeholder="Enter category"
-                  aria-invalid={!!errors.category}
-                  {...register("category")}
-                />
+                <select
+                  id="categoryId"
+                  aria-invalid={!!errors.categoryId}
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                  {...register("categoryId", {
+                    required: "Choose a category",
+                  })}
+                >
+                  <option value="">Choose a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
 
-                <FieldError errors={[errors.category]} />
+                <FieldError errors={[errors.categoryId]} />
               </Field>
 
-              <Field data-invalid={!!errors.brand} className="w-full">
-                <FieldLabel htmlFor="brand">Brand</FieldLabel>
+              <Field data-invalid={!!errors.brandId} className="w-full">
+                <FieldLabel htmlFor="brandId">Brand</FieldLabel>
 
-                <Input
-                  id="brand"
-                  placeholder="Enter product brand"
-                  aria-invalid={!!errors.brand}
-                  {...register("brand")}
-                />
+                <select
+                  id="brandId"
+                  aria-invalid={!!errors.brandId}
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                  {...register("brandId", {
+                    required: "Choose a brand",
+                  })}
+                >
+                  <option value="">Choose a brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
 
-                <FieldError errors={[errors.brand]} />
+                <FieldError errors={[errors.brandId]} />
               </Field>
             </div>
+
+            <p className="-mt-3 text-xs text-muted-foreground">
+              Missing one?{" "}
+              <a
+                href="/admin/categories"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Add categories and brands
+              </a>{" "}
+              (opens in a new tab), then reload this page.
+            </p>
 
             {/* Price & Stock */}
             <div className="flex flex-col gap-5 md:flex-row">

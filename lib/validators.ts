@@ -1,4 +1,4 @@
-import { PAYMENT_METHODS, USER_ROLES } from "@/lib/constants";
+import { COURIERS, PAYMENT_METHODS, USER_ROLES } from "@/lib/constants";
 import { z } from "zod";
 
 const currency = z
@@ -13,8 +13,8 @@ const currency = z
 export const insertProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   slug: z.string().min(3, "Slug must be at least 3 characters"),
-  category: z.string().min(3, "Category must be at least 3 characters"),
-  brand: z.string().min(3, "Brand must be at least 3 characters"),
+  categoryId: z.string().min(1, "Choose a category"),
+  brandId: z.string().min(1, "Choose a brand"),
   description: z.string().min(3, "Description must be at least 3 characters"),
   stock: z.coerce
     .number()
@@ -235,10 +235,9 @@ export const updateProfileSchema = z.object({
 export const updateUserSchema = updateProfileSchema.extend({
   id: z.string().min(1, "Id is required"),
   name: z.string().min(3, "Name must be at least 3 characters"),
-  role: z
-    .string()
-    .min(1, "Role is required")
-    .refine((value) => USER_ROLES.includes(value), "Invalid role"),
+  role: z.enum(USER_ROLES, {
+    error: "Invalid role",
+  }),
 });
 
 // Password reset
@@ -293,3 +292,36 @@ export const insertReviewSchema = z.object({
     .min(3, "Review must be at least 3 characters")
     .max(2000, "Review must be at most 2000 characters"),
 });
+
+// Admin shipping settings (PHP)
+export const shippingSettingsSchema = z.object({
+  shippingFee: z.coerce
+    .number({ error: "Enter the shipping fee in pesos" })
+    .min(0, "Shipping fee can't be negative")
+    .max(100000, "Shipping fee looks too high"),
+
+  freeShippingMin: z.coerce
+    .number({ error: "Enter an amount in pesos, or 0 to turn it off" })
+    .min(0, "Amount can't be negative"),
+});
+
+// Shipping an order
+export const shipmentSchema = z.object({
+  courier: z.enum(COURIERS, {
+    error: "Choose a courier",
+  }),
+
+  trackingNumber: z
+    .string()
+    .trim()
+    .max(60, "Tracking number is too long")
+    .optional()
+    .transform((value) => value || undefined),
+});
+
+// Category or brand name
+export const taxonomyNameSchema = z
+  .string()
+  .trim()
+  .min(2, "Name must be at least 2 characters")
+  .max(60, "Name must be at most 60 characters");

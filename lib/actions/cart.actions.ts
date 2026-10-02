@@ -7,6 +7,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { calcPrice } from "@/lib/cart-pricing";
+import { getShippingSettings } from "@/lib/store-settings";
 import { convertToPlainObject } from "@/lib/utils";
 import { formatError } from "@/lib/utils/server";
 import { cartItemSchema } from "@/lib/validators";
@@ -76,7 +77,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       }
 
       // Recalculate prices
-      const prices = calcPrice(cart.items);
+      const prices = calcPrice(cart.items, await getShippingSettings());
 
       // Update cart
       await prisma.cart.update({
@@ -90,7 +91,7 @@ export async function addItemToCart(data: z.infer<typeof cartItemSchema>) {
       });
     } else {
       // Create a new cart
-      const prices = calcPrice([item]);
+      const prices = calcPrice([item], await getShippingSettings());
 
       await prisma.cart.create({
         data: {
@@ -161,7 +162,7 @@ export async function removeItemFromCart(productId: string) {
     }
 
     // Recalculate cart prices
-    const prices = calcPrice(cart.items);
+    const prices = calcPrice(cart.items, await getShippingSettings());
 
     // Update cart in database
     await prisma.cart.update({

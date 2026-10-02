@@ -28,7 +28,7 @@ export default function Charts({ data: { salesData } }: ChartsProps) {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value}`}
+          tickFormatter={(value) => `₱${Number(value).toLocaleString("en-PH")}`}
         />
 
         <Bar

@@ -61,6 +61,45 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         )}
       </div>
 
+      {/* Plain GET form: the route streams back a CSV download */}
+      <form
+        action="/admin/orders/export"
+        method="GET"
+        className="flex flex-wrap items-end gap-3 rounded-lg border p-3"
+      >
+        <div className="space-y-1">
+          <label htmlFor="export-from" className="block text-xs font-medium">
+            From
+          </label>
+          <input
+            id="export-from"
+            name="from"
+            type="date"
+            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="export-to" className="block text-xs font-medium">
+            To
+          </label>
+          <input
+            id="export-to"
+            name="to"
+            type="date"
+            className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+          />
+        </div>
+
+        <button type="submit" className={buttonVariants({ variant: "outline" })}>
+          Export CSV
+        </button>
+
+        <p className="text-xs text-muted-foreground">
+          Leave dates empty to export every order. Dates are in Philippine time.
+        </p>
+      </form>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>

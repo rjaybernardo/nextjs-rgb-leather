@@ -1,19 +1,23 @@
-import { FREE_SHIPPING_MIN, SHIPPING_FEE, VAT_RATE } from "@/lib/constants";
+import { VAT_RATE } from "@/lib/constants";
+import type { ShippingSettings } from "@/lib/store-settings";
 import { round2 } from "@/lib/utils";
 import type { CartItem } from "@/types";
 
 // Calculate cart price based on items. Prices are VAT-inclusive, so taxPrice
 // is the VAT already contained in the total, not an extra charge.
-export const calcPrice = (items: CartItem[]) => {
+export const calcPrice = (
+  items: CartItem[],
+  { shippingFee, freeShippingMin }: ShippingSettings,
+) => {
   const itemsPrice = round2(
     items.reduce((acc, item) => acc + Number(item.price) * item.qty, 0),
   );
 
   const qualifiesForFreeShipping =
-    FREE_SHIPPING_MIN > 0 && itemsPrice >= FREE_SHIPPING_MIN;
+    freeShippingMin > 0 && itemsPrice >= freeShippingMin;
 
   const shippingPrice = round2(
-    items.length === 0 || qualifiesForFreeShipping ? 0 : SHIPPING_FEE,
+    items.length === 0 || qualifiesForFreeShipping ? 0 : shippingFee,
   );
 
   const totalPrice = round2(itemsPrice + shippingPrice);
