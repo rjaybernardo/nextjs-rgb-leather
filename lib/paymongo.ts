@@ -2,6 +2,8 @@ import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import * as Sentry from "@sentry/nextjs";
+
 const PAYMONGO_API_URL = "https://api.paymongo.com/v1";
 
 // Methods must be activated on your PayMongo account; override with
@@ -66,11 +68,20 @@ async function paymongoRequest<T>(path: string, init?: RequestInit) {
   if (!response.ok) {
     const detail = body?.errors?.[0]?.detail;
 
-    throw new Error(
+    const error = new Error(
       typeof detail === "string"
         ? `PayMongo: ${detail}`
         : `PayMongo request failed (${response.status})`,
     );
+
+    // Payment provider failures are worth knowing about even though the
+    // customer just sees a message
+    Sentry.captureException(error, {
+      tags: { provider: "paymongo", status: response.status },
+      extra: { path },
+    });
+
+    throw error;
   }
 
   return body as { data: T };

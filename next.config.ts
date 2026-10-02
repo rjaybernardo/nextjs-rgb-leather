@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -68,4 +69,27 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/*
+ * Sentry: the DSN (in instrumentation files) turns reporting on. Source maps
+ * upload during builds only when SENTRY_AUTH_TOKEN, SENTRY_ORG and
+ * SENTRY_PROJECT are set, so stack traces show your real code.
+ */
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  // Send browser reports through this site so the CSP and ad blockers
+  // don't drop them
+  tunnelRoute: "/monitoring",
+  widenClientFileUpload: true,
+  // Without a token there is nothing to upload; skip instead of warning
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+  release: {
+    create: Boolean(process.env.SENTRY_AUTH_TOKEN),
+  },
+  // Don't send the build plugin's own usage data to Sentry
+  telemetry: false,
+  silent: !process.env.CI,
+});

@@ -54,3 +54,6 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Sentry
+.env.sentry-build-plugin

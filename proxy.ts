@@ -30,5 +30,8 @@ export const proxy = auth((request) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  // Skips API routes, static files and Sentry's tunnel (/monitoring)
+  matcher: [
+    "/((?!api|monitoring|_next/static|_next/image|favicon.ico|.*\\..*).*)",
+  ],
 };
