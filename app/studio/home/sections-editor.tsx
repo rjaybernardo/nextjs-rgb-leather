@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutTemplate, Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 import {
   addSection,
+  applyDesignPreset,
   deleteSection,
   moveSection,
   setSectionEnabled,
@@ -40,6 +41,7 @@ export default function SectionsEditor({ sections }: { sections: Section[] }) {
   const [draft, setDraft] = useState<Record<string, unknown>>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [newType, setNewType] = useState<SectionType>("hero");
+  const [confirmPreset, setConfirmPreset] = useState(false);
 
   function run(action: () => Promise<Result>, onSuccess?: () => void) {
     startTransition(async () => {
@@ -207,6 +209,37 @@ export default function SectionsEditor({ sections }: { sections: Section[] }) {
           <Plus />
           Add section
         </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
+        <LayoutTemplate className="size-5 text-muted-foreground" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <div className="font-medium">Use the RGB Leathercrafts layout</div>
+          <p className="text-sm text-muted-foreground">
+            Adds the full store design (hero, shop tabs, craft, reviews, set, made to order,
+            gallery, FAQ) with ready-to-edit wording, and sets the cordovan color and Schibsted
+            Grotesk font. Your current sections are hidden, not deleted.
+          </p>
+        </div>
+
+        {confirmPreset ? (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              disabled={isPending}
+              onClick={() => run(applyDesignPreset, () => setConfirmPreset(false))}
+            >
+              Yes, add the layout
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setConfirmPreset(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button type="button" variant="outline" onClick={() => setConfirmPreset(true)}>
+            Use this layout
+          </Button>
+        )}
       </div>
     </div>
   );

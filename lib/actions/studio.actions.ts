@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { recordAudit } from "@/lib/audit";
+import { DESIGN_SECTIONS, DESIGN_SETTINGS } from "@/lib/design-preset";
 import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, assertRateLimit } from "@/lib/rate-limit";
@@ -83,6 +84,51 @@ export async function updateSiteSettings(changes: Record<string, unknown>): Prom
 }
 
 // ------------------------------------------------------------- sections
+
+// Adds the RGB Leathercrafts layout to the top of the home page and applies its
+// theme. Existing sections are hidden, not deleted, so nothing is lost.
+export async function applyDesignPreset(): Promise<Result> {
+  try {
+    const session = await assertAdmin();
+
+    const row = await prisma.siteSettings.findUnique({ where: { id: 1 } });
+    const settings = siteSettingsSchema.parse(
+      mergeSettings(resolveSiteSettings(row?.data), DESIGN_SETTINGS),
+    );
+    const sections = DESIGN_SECTIONS.map((section) => ({
+      type: section.type,
+      data: sectionSchemas[section.type].parse(section.data),
+    }));
+
+    await prisma.$transaction([
+      prisma.homeSection.updateMany({
+        data: { enabled: false, position: { increment: sections.length } },
+      }),
+      prisma.homeSection.createMany({
+        data: sections.map((section, position) => ({ ...section, position, enabled: true })),
+      }),
+      prisma.siteSettings.upsert({
+        where: { id: 1 },
+        create: { id: 1, data: settings },
+        update: { data: settings },
+      }),
+    ]);
+
+    await recordAudit({
+      actor: session,
+      action: "site.preset.apply",
+      entityType: "site",
+      details: { preset: "rgb-leathercrafts", sections: sections.length },
+    });
+
+    invalidateSite();
+    revalidatePath("/studio", "layout");
+
+    return ok("Layout added. Your earlier sections are hidden below it.");
+  } catch (error) {
+    return fail(error);
+  }
+}
 
 export async function getStudioSections() {
   await requireAdmin();

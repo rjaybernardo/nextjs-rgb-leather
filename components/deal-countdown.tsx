@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Section, pillButton } from "@/components/sections/section-shell";
+import AccentText from "@/components/shared/accent-text";
 
 type DealCountdownProps = {
   title: string;
@@ -42,8 +43,8 @@ const isFinished = (time: TimeRemaining) =>
   time.days + time.hours + time.minutes + time.seconds === 0;
 
 const StatBox = ({ label, value }: { label: string; value: number }) => (
-  <li className="w-full p-4 text-center">
-    <p className="text-3xl font-bold tabular-nums">{value}</p>
+  <li className="w-full border-t-2 border-foreground pt-3">
+    <p className="text-[clamp(28px,3vw,40px)] font-bold tracking-[-0.03em] tabular-nums">{value}</p>
     <p className="text-sm text-muted-foreground">{label}</p>
   </li>
 );
@@ -71,11 +72,12 @@ const DealCountdown = ({
   const ended = time !== null && isFinished(time);
 
   return (
-    <section className="my-20 grid grid-cols-1 gap-8 md:grid-cols-2">
-      <div className="flex flex-col justify-center gap-4">
-        <h2 className="text-3xl font-bold">{ended ? "This deal has ended" : title}</h2>
+    <Section tone="stone">
+      <div className="grid items-center gap-[clamp(32px,5vw,80px)] lg:grid-cols-2">
+      <div className="flex min-w-0 flex-col justify-center gap-6">
+        <h2 className="h-section">{ended ? "This deal has ended" : <AccentText text={title} />}</h2>
 
-        <p className="text-muted-foreground">
+        <p className="max-w-[44ch] text-lg text-muted-foreground">
           {ended
             ? "Check out our latest products and promotions."
             : description}
@@ -83,7 +85,7 @@ const DealCountdown = ({
 
         {!ended && (
           // Same layout while loading, so the page doesn't jump
-          <ul className="grid grid-cols-4" aria-label="Time left">
+          <ul className="grid max-w-md grid-cols-4 gap-4" aria-label="Time left">
             <StatBox label="Days" value={time?.days ?? 0} />
             <StatBox label="Hours" value={time?.hours ?? 0} />
             <StatBox label="Minutes" value={time?.minutes ?? 0} />
@@ -93,7 +95,7 @@ const DealCountdown = ({
 
         {ctaText && ctaUrl && (
           <div>
-            <Link href={ended ? "/search" : ctaUrl} className={buttonVariants()}>
+            <Link href={ended ? "/search" : ctaUrl} className={pillButton.dark}>
               {ended ? "View products" : ctaText}
             </Link>
           </div>
@@ -101,17 +103,12 @@ const DealCountdown = ({
       </div>
 
       {imageUrl && (
-        <div className="flex items-center justify-center">
-          <Image
-            src={imageUrl}
-            alt={title}
-            width={480}
-            height={320}
-            className="h-auto w-auto max-w-full rounded-lg"
-          />
+        <div className="backdrop-leather aspect-[5/4] min-w-0">
+          <Image src={imageUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
         </div>
       )}
-    </section>
+      </div>
+    </Section>
   );
 };
 

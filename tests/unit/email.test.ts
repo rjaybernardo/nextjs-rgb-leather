@@ -90,7 +90,7 @@ describe("sendEmail", () => {
     // Branded HTML alongside the plain text
     expect(payload.html).toContain("<!DOCTYPE html");
     expect(payload.html).toContain("Thanks for your order");
-    expect(payload.html).toContain("#8A4B22");
+    expect(payload.html).toContain("#43191A");
     expect(payload.html).toContain("help@rgbleather.ph");
     expect(payload.html).toContain("Leather wallet");
     expect(options).toEqual({ idempotencyKey: `order-placed/${order.id}` });

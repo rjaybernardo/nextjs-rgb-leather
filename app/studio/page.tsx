@@ -5,7 +5,7 @@ import { getStudioPages, getStudioSections, getStudioSettings } from "@/lib/acti
 
 const AREAS = [
   { href: "/studio/branding", title: "Branding", text: "Site name, logo, contact details and social links." },
-  { href: "/studio/theme", title: "Theme", text: "Brand color, font, corner roundness and light or dark mode." },
+  { href: "/studio/theme", title: "Theme", text: "Accent color, font, corner roundness and light or dark mode." },
   { href: "/studio/home", title: "Home page", text: "Add, reorder, show or hide and edit home page sections." },
   { href: "/studio/pages", title: "Pages", text: "About, contact and policy pages, written in Markdown." },
   { href: "/studio/announcement", title: "Announcement", text: "The bar across the top of every page." },

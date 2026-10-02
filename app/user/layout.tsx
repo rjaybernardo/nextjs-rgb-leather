@@ -11,7 +11,7 @@ export default function UserLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="storefront flex min-h-screen flex-col">
       <header className="border-b">
         <div className="wrapper flex min-h-16 items-center px-4">
           <Link href="/" className="shrink-0">

@@ -1,29 +1,46 @@
-import { ChevronDown } from "lucide-react";
+import { Plus } from "lucide-react";
+import Link from "next/link";
 
 import type { SectionData } from "@/lib/site-config";
+
+import { Section, SectionTitle, pillButton } from "./section-shell";
 
 // Native <details>: keyboard and screen-reader friendly with no JavaScript
 const FaqSection = ({ data }: { data: SectionData<"faq"> }) => {
   return (
-    <section className="mx-auto max-w-3xl space-y-4">
-      <h2 className="h2-bold text-center">{data.title}</h2>
+    <Section tone="stone">
+      <div className="grid items-start gap-[clamp(32px,6vw,96px)] lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="flex min-w-0 flex-col gap-5">
+          <SectionTitle text={data.title} />
+          {data.intro && <p className="max-w-[36ch] text-muted-foreground">{data.intro}</p>}
+          {data.ctaText && data.ctaUrl && (
+            <div>
+              <Link href={data.ctaUrl} className={pillButton.ghost}>
+                {data.ctaText}
+              </Link>
+            </div>
+          )}
+        </div>
 
-      <div className="divide-y rounded-lg border">
-        {data.items.map((item, index) => (
-          <details key={`${item.question}-${index}`} className="group p-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
-              {item.question}
-              <ChevronDown
-                className="size-4 shrink-0 transition-transform group-open:rotate-180"
-                aria-hidden="true"
-              />
-            </summary>
+        <div className="min-w-0 border-t">
+          {data.items.map((item, index) => (
+            <details key={`${item.question}-${index}`} className="group border-b" open={index === 0}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-[22px] text-lg font-semibold tracking-[-0.01em] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+                {item.question}
+                <span
+                  aria-hidden="true"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-transform group-open:rotate-45 motion-reduce:transition-none"
+                >
+                  <Plus className="size-3.5" />
+                </span>
+              </summary>
 
-            <p className="mt-3 whitespace-pre-line text-sm text-muted-foreground">{item.answer}</p>
-          </details>
-        ))}
+              <p className="mb-6 max-w-[60ch] whitespace-pre-line text-muted-foreground">{item.answer}</p>
+            </details>
+          ))}
+        </div>
       </div>
-    </section>
+    </Section>
   );
 };
 

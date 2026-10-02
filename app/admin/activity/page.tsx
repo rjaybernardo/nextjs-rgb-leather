@@ -40,6 +40,7 @@ const ACTION_LABELS: Record<string, string> = {
   "brand.delete": "Deleted brand",
   "site.settings.update": "Changed site settings",
   "site.section.create": "Added home section",
+  "site.preset.apply": "Applied the store layout",
   "site.section.update": "Edited home section",
   "site.section.show": "Showed home section",
   "site.section.hide": "Hid home section",

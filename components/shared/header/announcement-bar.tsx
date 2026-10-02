@@ -9,17 +9,26 @@ const AnnouncementBar = async () => {
   if (!announcement.enabled || !announcement.text) return null;
 
   return (
-    <div className="bg-primary px-4 py-2 text-center text-sm text-primary-foreground">
-      <span>{announcement.text}</span>
+    <div className="bg-[var(--night)] text-[13px] font-medium text-[var(--on-night)]">
+      <div className="wrap flex min-h-10 items-center justify-center gap-7 text-center">
+        <span>
+          {announcement.text}
+          {announcement.linkText && announcement.linkUrl && (
+            <>
+              {" "}
+              <Link href={announcement.linkUrl} className="font-semibold underline underline-offset-4">
+                {announcement.linkText}
+              </Link>
+            </>
+          )}
+        </span>
 
-      {announcement.linkText && announcement.linkUrl && (
-        <>
-          {" "}
-          <Link href={announcement.linkUrl} className="font-semibold underline underline-offset-4">
-            {announcement.linkText}
-          </Link>
-        </>
-      )}
+        {announcement.secondaryText && (
+          <span className="hidden text-[var(--on-night-muted)] sm:inline">
+            {announcement.secondaryText}
+          </span>
+        )}
+      </div>
     </div>
   );
 };

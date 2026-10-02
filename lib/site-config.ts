@@ -41,6 +41,7 @@ const hexColor = z
 // ---------------------------------------------------------------- settings
 
 export const FONT_OPTIONS = [
+  { value: "schibsted", label: "Schibsted Grotesk (bold, editorial)" },
   { value: "inter", label: "Inter (clean, modern)" },
   { value: "poppins", label: "Poppins (friendly, rounded)" },
   { value: "montserrat", label: "Montserrat (bold, geometric)" },
@@ -55,7 +56,9 @@ export const RADIUS_OPTIONS = [
   { value: "lg", label: "Very rounded", rem: "1rem" },
 ] as const;
 
+// The accent: dark sections, badges and highlights
 export const THEME_PRESETS = [
+  { name: "Cordovan", color: "#43191A" },
   { name: "Saddle", color: "#8A4B22" },
   { name: "Espresso", color: "#4A2C21" },
   { name: "Charcoal", color: "#1F2937" },
@@ -90,6 +93,7 @@ export const siteSettingsSchema = z.object({
     radius: z.enum(RADIUS_OPTIONS.map((option) => option.value) as ["none", "sm", "md", "lg"]),
     font: z.enum(
       FONT_OPTIONS.map((option) => option.value) as [
+        "schibsted",
         "inter",
         "poppins",
         "montserrat",
@@ -103,6 +107,7 @@ export const siteSettingsSchema = z.object({
   announcement: z.object({
     enabled: z.boolean(),
     text: optionalText(140),
+    secondaryText: optionalText(140),
     linkText: optionalText(40),
     linkUrl: link,
   }),
@@ -110,6 +115,8 @@ export const siteSettingsSchema = z.object({
   footer: z.object({
     about: optionalText(300),
     copyright: optionalText(120),
+    newsletterTitle: optionalText(100),
+    newsletterText: optionalText(200),
   }),
 });
 
@@ -125,20 +132,23 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contact: { email: "", phone: "", address: "" },
   social: { facebook: "", instagram: "", tiktok: "", shopee: "", lazada: "" },
   theme: {
-    primaryColor: "#8A4B22",
+    primaryColor: "#43191A",
     radius: "md",
-    font: "inter",
-    defaultMode: "system",
+    font: "schibsted",
+    defaultMode: "light",
   },
   announcement: {
-    enabled: false,
+    enabled: true,
     text: "Free shipping on orders over ₱3,000",
+    secondaryText: "Free monogramming this month",
     linkText: "Shop now",
     linkUrl: "/search",
   },
   footer: {
-    about: "Leather goods made to last, shipped anywhere in the Philippines.",
+    about: "Handmade leather goods, cut and stitched one at a time.",
     copyright: "",
+    newsletterTitle: "Take 10% off *your first piece.*",
+    newsletterText: "Plus first access to small-batch leathers before they sell out. One email a month.",
   },
 };
 
@@ -167,6 +177,12 @@ export function resolveSiteSettings(saved: unknown): SiteSettings {
 export const FEATURE_ICONS = [
   "ShoppingBag",
   "Truck",
+  "Wrench",
+  "Stamp",
+  "Scissors",
+  "Ruler",
+  "Package",
+  "Clock",
   "ShieldCheck",
   "RotateCcw",
   "BadgeCheck",
@@ -187,12 +203,25 @@ const featureItem = z.object({
 
 export const sectionSchemas = {
   hero: z.object({
-    heading: z.string().trim().min(1, "Add a heading").max(100),
+    heading: z.string().trim().min(1, "Add a heading").max(120),
     subheading: optionalText(240),
     imageUrl: imageLink,
     ctaText: optionalText(40),
     ctaUrl: link,
-    align: z.enum(["left", "center"]),
+    secondaryCtaText: optionalText(40),
+    secondaryCtaUrl: link,
+    layout: z.enum(["split", "overlay"]),
+    showRating: z.enum(["yes", "no"]),
+    trustPoints: z.array(z.object({ text: z.string().trim().min(1).max(40) })).max(4),
+    callouts: z
+      .array(
+        z.object({
+          text: z.string().trim().min(1, "Add the callout text").max(50),
+          position: z.enum(["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"]),
+        }),
+      )
+      .max(4),
+    caption: optionalText(80),
   }),
   featured_carousel: z.object({
     title: optionalText(80),
@@ -218,6 +247,7 @@ export const sectionSchemas = {
   }),
   features: z.object({
     title: optionalText(80),
+    style: z.enum(["strip", "cards"]),
     items: z.array(featureItem).min(1, "Add at least one item").max(8),
   }),
   story: z.object({
@@ -230,12 +260,14 @@ export const sectionSchemas = {
   }),
   testimonials: z.object({
     title: z.string().trim().min(1, "Add a title").max(80),
+    showSummary: z.enum(["yes", "no"]),
     items: z
       .array(
         z.object({
           quote: z.string().trim().min(1, "Add the quote").max(400),
           name: z.string().trim().min(1, "Add a name").max(60),
           location: optionalText(60),
+          product: optionalText(60),
         }),
       )
       .min(1, "Add at least one testimonial")
@@ -243,6 +275,9 @@ export const sectionSchemas = {
   }),
   faq: z.object({
     title: z.string().trim().min(1, "Add a title").max(80),
+    intro: optionalText(200),
+    ctaText: optionalText(40),
+    ctaUrl: link,
     items: z
       .array(
         z.object({
@@ -257,6 +292,67 @@ export const sectionSchemas = {
     title: z.string().trim().min(1, "Add a title").max(80),
     text: optionalText(200),
     buttonText: z.string().trim().min(1).max(30),
+  }),
+  product_tabs: z.object({
+    title: z.string().trim().min(1, "Add a title").max(80),
+    count: z.coerce.number().int().min(4).max(12),
+    showAllTab: z.enum(["yes", "no"]),
+  }),
+  craft: z.object({
+    title: z.string().trim().min(1, "Add a title").max(100),
+    intro: optionalText(240),
+    imageUrl: imageLink,
+    points: z
+      .array(z.object({ title: z.string().trim().min(1).max(80), text: optionalText(200) }))
+      .max(6),
+    comparisonTitle: optionalText(100),
+    ourLabel: optionalText(40),
+    theirLabel: optionalText(40),
+    rows: z
+      .array(
+        z.object({
+          label: z.string().trim().min(1).max(40),
+          ours: z.string().trim().min(1).max(80),
+          theirs: z.string().trim().min(1).max(80),
+        }),
+      )
+      .max(8),
+  }),
+  spotlight: z.object({
+    badge: optionalText(30),
+    title: z.string().trim().min(1, "Add a title").max(80),
+    text: optionalText(300),
+    bullets: z.array(z.object({ text: z.string().trim().min(1).max(80) })).max(5),
+    imageUrl: imageLink,
+    productSlug: z
+      .string()
+      .trim()
+      .max(120)
+      .refine((value) => value === "" || /^[a-z0-9-]+$/.test(value), "Use the product's address, like the-bifold"),
+    compareAtPrice: optionalText(20).refine(
+      (value) => value === "" || /^\d+(\.\d{1,2})?$/.test(value),
+      "Enter an amount like 4500",
+    ),
+    ctaText: optionalText(40),
+    ctaUrl: link,
+  }),
+  steps: z.object({
+    title: z.string().trim().min(1, "Add a title").max(80),
+    intro: optionalText(240),
+    steps: z
+      .array(z.object({ title: z.string().trim().min(1).max(60), text: optionalText(200) }))
+      .min(1, "Add at least one step")
+      .max(6),
+    ctaText: optionalText(40),
+    ctaUrl: link,
+  }),
+  gallery: z.object({
+    title: z.string().trim().min(1, "Add a title").max(80),
+    linkText: optionalText(60),
+    linkUrl: link,
+    images: z
+      .array(z.object({ imageUrl: imageLink, caption: optionalText(40) }))
+      .max(12),
   }),
 } as const;
 
@@ -276,12 +372,18 @@ const inThirtyDays = () => {
 
 export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   hero: () => ({
-    heading: "Leather goods made to last",
-    subheading: "Wallets, bags and belts cut and stitched for everyday use.",
+    heading: "Made by hand. *Built to be handed down.*",
+    subheading: "Full-grain, vegetable-tanned leather, saddle-stitched one piece at a time.",
     imageUrl: "",
-    ctaText: "Shop now",
+    ctaText: "Shop bestsellers",
     ctaUrl: "/search",
-    align: "left",
+    secondaryCtaText: "",
+    secondaryCtaUrl: "",
+    layout: "split",
+    showRating: "yes",
+    trustPoints: [],
+    callouts: [],
+    caption: "",
   }),
   featured_carousel: () => ({ title: "" }),
   newest_products: () => ({ title: "Newest Arrivals", count: 4 }),
@@ -296,6 +398,7 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   }),
   features: () => ({
     title: "",
+    style: "strip",
     items: [
       { icon: "Truck", title: "Nationwide shipping", text: "Delivered anywhere in the Philippines" },
       { icon: "RotateCcw", title: "Easy returns", text: "Returns within the return period" },
@@ -313,10 +416,14 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   }),
   testimonials: () => ({
     title: "What customers say",
-    items: [{ quote: "Replace this with a real customer review.", name: "Customer name", location: "City" }],
+    showSummary: "yes",
+    items: [{ quote: "Replace this with a real customer review.", name: "Customer name", location: "City", product: "" }],
   }),
   faq: () => ({
     title: "Frequently asked questions",
+    intro: "",
+    ctaText: "",
+    ctaUrl: "",
     items: [
       { question: "How long does shipping take?", answer: "Replace this with your delivery times." },
       { question: "Can I pay cash on delivery?", answer: "Yes, choose Cash on Delivery at checkout." },
@@ -327,6 +434,44 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
     text: "New pieces and member deals, a few times a month.",
     buttonText: "Subscribe",
   }),
+  product_tabs: () => ({ title: "What do you *carry?*", count: 4, showAllTab: "no" }),
+  craft: () => ({
+    title: "What goes into *one piece*",
+    intro: "Hours of handwork, start to finish. Here is where the time goes.",
+    imageUrl: "",
+    points: [
+      { title: "Full-grain, vegetable-tanned hide.", text: "Tanned slowly with tree bark, so it darkens instead of cracking." },
+      { title: "Saddle-stitched by hand.", text: "Two needles, waxed thread. If one stitch breaks, the seam holds." },
+    ],
+    comparisonTitle: "",
+    ourLabel: "",
+    theirLabel: "",
+    rows: [],
+  }),
+  spotlight: () => ({
+    badge: "",
+    title: "Featured piece",
+    text: "Tell customers why this one is worth it.",
+    bullets: [],
+    imageUrl: "",
+    productSlug: "",
+    compareAtPrice: "",
+    ctaText: "View it",
+    ctaUrl: "/search",
+  }),
+  steps: () => ({
+    title: "Made to order, *made for you.*",
+    intro: "",
+    steps: [
+      { title: "Choose a piece", text: "Start from any wallet, bag or accessory in the shop." },
+      { title: "Pick leather and thread", text: "" },
+      { title: "Add your initials", text: "Up to three letters, heat-stamped." },
+      { title: "We make it", text: "Ships within 10 working days." },
+    ],
+    ctaText: "",
+    ctaUrl: "",
+  }),
+  gallery: () => ({ title: "Carried for years", linkText: "", linkUrl: "", images: [] }),
 };
 
 export const SECTION_LABELS: Record<SectionType, { name: string; hint: string }> = {
@@ -340,6 +485,11 @@ export const SECTION_LABELS: Record<SectionType, { name: string; hint: string }>
   testimonials: { name: "Testimonials", hint: "Quotes from customers" },
   faq: { name: "FAQ", hint: "Common questions and answers" },
   newsletter: { name: "Newsletter sign-up", hint: "Collect customer emails" },
+  product_tabs: { name: "Shop by category tabs", hint: "Product grid with a tab per category" },
+  craft: { name: "Craft and comparison", hint: "How it's made, with an optional comparison table" },
+  spotlight: { name: "Product spotlight", hint: "Feature one product or set" },
+  steps: { name: "Steps", hint: "Numbered steps, like made to order" },
+  gallery: { name: "Photo gallery", hint: "A row of photos with captions" },
 };
 
 // ---------------------------------------------------------------- editor fields
@@ -352,14 +502,46 @@ export type FieldDef =
 
 const iconOptions = FEATURE_ICONS.map((icon) => ({ value: icon, label: icon }));
 
+const ACCENT_HELP = "Wrap words in *asterisks* for the italic accent.";
+
+const CALLOUT_POSITIONS = [
+  { value: "top-left", label: "Top left" },
+  { value: "top-right", label: "Top right" },
+  { value: "middle-left", label: "Middle left" },
+  { value: "middle-right", label: "Middle right" },
+  { value: "bottom-left", label: "Bottom left" },
+  { value: "bottom-right", label: "Bottom right" },
+] as const;
+
 export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
   hero: [
-    { key: "heading", label: "Heading", type: "text", max: 100 },
+    { key: "heading", label: "Heading", type: "text", max: 120, help: ACCENT_HELP },
     { key: "subheading", label: "Subheading", type: "textarea", max: 240 },
-    { key: "imageUrl", label: "Background image", type: "image", help: "Wide photo, at least 1600px across. Leave empty for a plain banner." },
-    { key: "ctaText", label: "Button text", type: "text", max: 40 },
-    { key: "ctaUrl", label: "Button link", type: "url", help: "A page like /search or a full link" },
-    { key: "align", label: "Text alignment", type: "select", options: [{ value: "left", label: "Left" }, { value: "center", label: "Center" }] },
+    { key: "layout", label: "Layout", type: "select", options: [{ value: "split", label: "Text beside the photo" }, { value: "overlay", label: "Text over the photo" }] },
+    { key: "imageUrl", label: "Photo", type: "image", help: "A product or workshop photo. Square-ish for “beside”, wide for “over”." },
+    { key: "ctaText", label: "Main button text", type: "text", max: 40 },
+    { key: "ctaUrl", label: "Main button link", type: "url", help: "A page like /search or a full link" },
+    { key: "secondaryCtaText", label: "Second button text (optional)", type: "text", max: 40 },
+    { key: "secondaryCtaUrl", label: "Second button link", type: "url" },
+    { key: "showRating", label: "Star rating from your reviews", type: "select", options: [{ value: "yes", label: "Shown" }, { value: "no", label: "Hidden" }] },
+    {
+      key: "trustPoints",
+      label: "Trust points",
+      type: "list",
+      itemLabel: "Point",
+      fields: [{ key: "text", label: "Text", type: "text", max: 40 }],
+    },
+    {
+      key: "callouts",
+      label: "Photo callouts",
+      type: "list",
+      itemLabel: "Callout",
+      fields: [
+        { key: "text", label: "Text", type: "text", max: 50 },
+        { key: "position", label: "Position", type: "select", options: CALLOUT_POSITIONS },
+      ],
+    },
+    { key: "caption", label: "Photo caption (optional)", type: "text", max: 80 },
   ],
   featured_carousel: [
     { key: "title", label: "Title (optional)", type: "text", max: 80, help: "Shows products marked Featured that have a banner image." },
@@ -382,6 +564,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
   ],
   features: [
     { key: "title", label: "Title (optional)", type: "text", max: 80 },
+    { key: "style", label: "Style", type: "select", options: [{ value: "strip", label: "Strip across the page" }, { value: "cards", label: "Card" }] },
     {
       key: "items",
       label: "Items",
@@ -403,7 +586,8 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
     { key: "ctaUrl", label: "Button link", type: "url" },
   ],
   testimonials: [
-    { key: "title", label: "Title", type: "text", max: 80 },
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
+    { key: "showSummary", label: "Rating summary from your reviews", type: "select", options: [{ value: "yes", label: "Shown" }, { value: "no", label: "Hidden" }] },
     {
       key: "items",
       label: "Testimonials",
@@ -413,11 +597,15 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
         { key: "quote", label: "Quote", type: "textarea", max: 400 },
         { key: "name", label: "Name", type: "text", max: 60 },
         { key: "location", label: "Location (optional)", type: "text", max: 60 },
+        { key: "product", label: "Product (optional)", type: "text", max: 60 },
       ],
     },
   ],
   faq: [
-    { key: "title", label: "Title", type: "text", max: 80 },
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
+    { key: "intro", label: "Intro (optional)", type: "textarea", max: 200 },
+    { key: "ctaText", label: "Button text (optional)", type: "text", max: 40 },
+    { key: "ctaUrl", label: "Button link", type: "url" },
     {
       key: "items",
       label: "Questions",
@@ -430,9 +618,91 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
     },
   ],
   newsletter: [
-    { key: "title", label: "Title", type: "text", max: 80 },
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
     { key: "text", label: "Text", type: "text", max: 200 },
     { key: "buttonText", label: "Button text", type: "text", max: 30 },
+  ],
+  product_tabs: [
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
+    { key: "count", label: "Products per tab", type: "number", min: 4, max: 12 },
+    { key: "showAllTab", label: "“All” tab first", type: "select", options: [{ value: "yes", label: "Shown" }, { value: "no", label: "Hidden" }] },
+  ],
+  craft: [
+    { key: "title", label: "Title", type: "text", max: 100, help: ACCENT_HELP },
+    { key: "intro", label: "Intro", type: "textarea", max: 240 },
+    { key: "imageUrl", label: "Photo", type: "image", help: "Numbered markers on the photo match the points below." },
+    {
+      key: "points",
+      label: "Points",
+      type: "list",
+      itemLabel: "Point",
+      fields: [
+        { key: "title", label: "Title", type: "text", max: 80 },
+        { key: "text", label: "Text", type: "text", max: 200 },
+      ],
+    },
+    { key: "comparisonTitle", label: "Comparison title (optional)", type: "text", max: 100 },
+    { key: "ourLabel", label: "Your column heading", type: "text", max: 40 },
+    { key: "theirLabel", label: "Other column heading", type: "text", max: 40 },
+    {
+      key: "rows",
+      label: "Comparison rows",
+      type: "list",
+      itemLabel: "Row",
+      fields: [
+        { key: "label", label: "Row label", type: "text", max: 40 },
+        { key: "ours", label: "Yours", type: "text", max: 80 },
+        { key: "theirs", label: "Theirs", type: "text", max: 80 },
+      ],
+    },
+  ],
+  spotlight: [
+    { key: "badge", label: "Badge (optional)", type: "text", max: 30, help: "e.g. Save ₱1,500" },
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
+    { key: "text", label: "Text", type: "textarea", max: 300 },
+    {
+      key: "bullets",
+      label: "Bullet points",
+      type: "list",
+      itemLabel: "Bullet",
+      fields: [{ key: "text", label: "Text", type: "text", max: 80 }],
+    },
+    { key: "imageUrl", label: "Photo", type: "image", help: "Leave empty to use the product's photo." },
+    { key: "productSlug", label: "Product address (optional)", type: "text", max: 120, help: "The end of its link, e.g. the-bifold. Shows its price and links to it." },
+    { key: "compareAtPrice", label: "Compare-at price (₱, optional)", type: "text", max: 20, help: "Shown struck through next to the price." },
+    { key: "ctaText", label: "Button text", type: "text", max: 40 },
+    { key: "ctaUrl", label: "Button link (if no product)", type: "url" },
+  ],
+  steps: [
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
+    { key: "intro", label: "Intro (optional)", type: "textarea", max: 240 },
+    {
+      key: "steps",
+      label: "Steps",
+      type: "list",
+      itemLabel: "Step",
+      fields: [
+        { key: "title", label: "Title", type: "text", max: 60 },
+        { key: "text", label: "Text", type: "text", max: 200 },
+      ],
+    },
+    { key: "ctaText", label: "Button text (optional)", type: "text", max: 40 },
+    { key: "ctaUrl", label: "Button link", type: "url" },
+  ],
+  gallery: [
+    { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
+    { key: "linkText", label: "Link text (optional)", type: "text", max: 60, help: "e.g. Share yours with #CarriedByRGB" },
+    { key: "linkUrl", label: "Link", type: "url" },
+    {
+      key: "images",
+      label: "Photos",
+      type: "list",
+      itemLabel: "Photo",
+      fields: [
+        { key: "imageUrl", label: "Photo", type: "image" },
+        { key: "caption", label: "Caption (optional)", type: "text", max: 40 },
+      ],
+    },
   ],
 };
 
@@ -454,10 +724,13 @@ export const SETTINGS_FIELDS = {
   announcement: [
     { key: "announcement.enabled", label: "Show the announcement bar", type: "select", options: [{ value: "true", label: "Shown" }, { value: "false", label: "Hidden" }] },
     { key: "announcement.text", label: "Message", type: "text", max: 140 },
+    { key: "announcement.secondaryText", label: "Second message (optional, hidden on phones)", type: "text", max: 140 },
     { key: "announcement.linkText", label: "Link text (optional)", type: "text", max: 40 },
     { key: "announcement.linkUrl", label: "Link", type: "url" },
   ],
   footer: [
+    { key: "footer.newsletterTitle", label: "Newsletter heading", type: "text", max: 100, help: "Wrap words in *asterisks* for the italic accent." },
+    { key: "footer.newsletterText", label: "Newsletter text", type: "textarea", max: 200 },
     { key: "footer.about", label: "Footer blurb", type: "textarea", max: 300 },
     { key: "footer.copyright", label: "Copyright line", type: "text", max: 120, help: "Leave empty for “© year Site name. All rights reserved.”" },
     { key: "description", label: "Default search description", type: "textarea", max: 300, help: "Used by search engines for pages without their own description." },

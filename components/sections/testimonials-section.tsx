@@ -1,29 +1,68 @@
-import { Quote } from "lucide-react";
-
+import { getReviewSummary } from "@/lib/actions/product.actions";
 import type { SectionData } from "@/lib/site-config";
 
-const TestimonialsSection = ({ data }: { data: SectionData<"testimonials"> }) => {
-  return (
-    <section className="space-y-4">
-      <h2 className="h2-bold">{data.title}</h2>
+import { Section, SectionTitle } from "./section-shell";
 
-      <ul className="grid gap-4 md:grid-cols-3">
+const TestimonialsSection = async ({ data }: { data: SectionData<"testimonials"> }) => {
+  const summary = data.showSummary === "yes" ? await getReviewSummary() : null;
+
+  return (
+    <Section innerClassName="flex flex-col gap-12">
+      <div className="flex flex-wrap items-end justify-between gap-8">
+        <SectionTitle text={data.title} />
+
+        {summary && summary.count > 0 && (
+          <div className="flex min-w-0 items-center gap-7">
+            <div>
+              <div className="text-[56px] font-bold leading-none tracking-[-0.04em]">
+                <span className="sr-only">Average rating </span>
+                {summary.average.toFixed(1)}
+              </div>
+              <div className="mt-1.5 text-[13px] text-muted-foreground">
+                {summary.count.toLocaleString("en-PH")} {summary.count === 1 ? "review" : "reviews"}
+              </div>
+            </div>
+
+            <ul className="flex w-[200px] flex-col gap-1.5 text-xs tabular-nums text-muted-foreground">
+              {summary.distribution.map((row) => (
+                <li key={row.stars} className="flex items-center gap-2.5">
+                  <span aria-hidden="true">{row.stars}</span>
+                  <span className="sr-only">
+                    {row.stars} stars: {row.count} {row.count === 1 ? "review" : "reviews"}
+                  </span>
+                  <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--line)]" aria-hidden="true">
+                    <span
+                      className="block h-full bg-foreground"
+                      style={{ width: `${Math.round((row.count / summary.count) * 100)}%` }}
+                    />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <ul className="grid gap-5 lg:grid-cols-3">
         {data.items.map((item, index) => (
           <li key={`${item.name}-${index}`}>
-            <figure className="flex h-full flex-col gap-4 rounded-lg border bg-card p-6">
-              <Quote className="size-6 text-primary" aria-hidden="true" />
-
-              <blockquote className="flex-1 text-sm">“{item.quote}”</blockquote>
-
-              <figcaption className="text-sm">
-                <span className="font-semibold">{item.name}</span>
-                {item.location && <span className="text-muted-foreground"> · {item.location}</span>}
+            <figure className="flex h-full flex-col gap-5 rounded-md border bg-card p-8">
+              <div aria-hidden="true" className="tracking-[2px]">
+                ★★★★★
+              </div>
+              <blockquote className="font-accent text-[22px] leading-[1.35]">“{item.quote}”</blockquote>
+              <figcaption className="mt-auto flex justify-between gap-3 border-t pt-4 text-[13px] text-muted-foreground">
+                <span>
+                  <strong className="font-semibold text-foreground">{item.name}</strong>
+                  {item.location && ` · ${item.location}`}
+                </span>
+                {item.product && <span className="text-right">{item.product}</span>}
               </figcaption>
             </figure>
           </li>
         ))}
       </ul>
-    </section>
+    </Section>
   );
 };
 

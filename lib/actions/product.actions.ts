@@ -558,3 +558,28 @@ export async function saveProductVariants(productId: string, input: VariantsInpu
     };
   }
 }
+
+// Store-wide rating for the home page: average, count and stars breakdown
+const cachedReviewSummary = cachedQuery(
+  async () => {
+    const groups = await prisma.review.groupBy({
+      by: ["rating"],
+      _count: { _all: true },
+    });
+
+    const distribution = [5, 4, 3, 2, 1].map((stars) => ({
+      stars,
+      count: groups.find((group) => group.rating === stars)?._count._all ?? 0,
+    }));
+    const count = distribution.reduce((sum, row) => sum + row.count, 0);
+    const total = distribution.reduce((sum, row) => sum + row.stars * row.count, 0);
+
+    return { count, average: count > 0 ? Math.round((total / count) * 10) / 10 : 0, distribution };
+  },
+  ["review-summary"],
+  catalogCache,
+);
+
+export async function getReviewSummary() {
+  return cachedReviewSummary();
+}

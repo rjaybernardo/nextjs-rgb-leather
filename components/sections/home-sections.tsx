@@ -8,10 +8,16 @@ import {
 import type { HomeSectionView } from "@/lib/site";
 
 import CategoryGridSection from "./category-grid-section";
+import CraftSection from "./craft-section";
 import FaqSection from "./faq-section";
 import FeaturesSection from "./features-section";
+import GallerySection from "./gallery-section";
 import HeroSection from "./hero-section";
 import NewsletterSection from "./newsletter-section";
+import ProductTabsSection from "./product-tabs-section";
+import { Section, SectionTitle } from "./section-shell";
+import SpotlightSection from "./spotlight-section";
+import StepsSection from "./steps-section";
 import StorySection from "./story-section";
 import TestimonialsSection from "./testimonials-section";
 
@@ -21,17 +27,22 @@ const FeaturedCarouselSection = async ({ title }: { title: string }) => {
   if (products.length === 0) return null;
 
   return (
-    <section className="space-y-4">
-      {title && <h2 className="h2-bold">{title}</h2>}
+    <Section innerClassName="flex flex-col gap-10">
+      {title && <SectionTitle text={title} />}
       <FeaturedCarousel products={products} />
-    </section>
+    </Section>
   );
 };
 
 const NewestProductsSection = async ({ title, count }: { title: string; count: number }) => {
   const products = await getLatestProducts(count);
 
-  return <ProductList title={title} data={products} />;
+  return (
+    <Section innerClassName="flex flex-col gap-10">
+      {title && <SectionTitle text={title} />}
+      <ProductList data={products} />
+    </Section>
+  );
 };
 
 // Renders one home section from Site Studio by its type
@@ -57,11 +68,22 @@ const HomeSection = ({ section, isFirst }: { section: HomeSectionView; isFirst: 
       return <FaqSection data={section.data} />;
     case "newsletter":
       return <NewsletterSection data={section.data} />;
+    case "product_tabs":
+      return <ProductTabsSection data={section.data} />;
+    case "craft":
+      return <CraftSection data={section.data} />;
+    case "spotlight":
+      return <SpotlightSection data={section.data} />;
+    case "steps":
+      return <StepsSection data={section.data} />;
+    case "gallery":
+      return <GallerySection data={section.data} />;
   }
 };
 
 const HomeSections = ({ sections }: { sections: HomeSectionView[] }) => (
-  <div className="space-y-12 py-6">
+  // Sections are full-width bands; cancel the page wrapper's top and bottom padding
+  <div className="-my-5">
     {sections.map((section, index) => (
       <HomeSection key={section.id} section={section} isFirst={index === 0} />
     ))}

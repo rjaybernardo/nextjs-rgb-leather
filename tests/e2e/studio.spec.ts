@@ -104,7 +104,9 @@ test("Studio changes show up on the storefront", async ({ page, browser }) => {
     await expectSaved(page);
 
     await expectOnStorefront(visitor, async () => {
-      await expect(visitor.getByRole("banner").getByText("E2E Leather Co")).toBeVisible({ timeout: 2_000 });
+      await expect(
+        visitor.getByRole("banner").getByRole("link", { name: "E2E Leather Co" }),
+      ).toBeVisible({ timeout: 2_000 });
       await expect(visitor).toHaveTitle(/E2E Leather Co/, { timeout: 2_000 });
     });
   });
@@ -117,7 +119,7 @@ test("Studio changes show up on the storefront", async ({ page, browser }) => {
 
     await expectOnStorefront(visitor, async () => {
       expect(await visitor.locator("style").allTextContents()).toContainEqual(
-        expect.stringContaining("--primary:#24543A"),
+        expect.stringContaining("--brand:#24543A"),
       );
     });
   });
@@ -125,7 +127,7 @@ test("Studio changes show up on the storefront", async ({ page, browser }) => {
   await test.step("announcement bar", async () => {
     await page.goto("/studio/announcement");
     await page.getByLabel("Show the announcement bar").selectOption("true");
-    await page.getByLabel("Message").fill("E2E sale today only");
+    await page.getByLabel("Message", { exact: true }).fill("E2E sale today only");
     await page.getByRole("button", { name: "Save changes" }).click();
     await expectSaved(page);
 
@@ -138,7 +140,11 @@ test("Studio changes show up on the storefront", async ({ page, browser }) => {
     await page.goto("/studio/home");
 
     for (const name of ["FAQ", "Newsletter sign-up"]) {
-      const row = page.getByRole("listitem").filter({ has: page.getByText(name, { exact: true }) });
+      // The first section of each kind (a store layout may have added a second)
+      const row = page
+        .getByRole("listitem")
+        .filter({ has: page.getByText(name, { exact: true }) })
+        .first();
       const show = row.getByRole("button", { name: "Show" });
 
       // Skip sections that are already shown
@@ -149,14 +155,16 @@ test("Studio changes show up on the storefront", async ({ page, browser }) => {
       await expect(row.getByText("Shown", { exact: true })).toBeVisible();
     }
 
+    const main = visitor.getByRole("main");
+
     await expectOnStorefront(visitor, async () => {
-      await expect(
-        visitor.getByRole("heading", { name: "Frequently asked questions" }),
-      ).toBeVisible({ timeout: 2_000 });
+      await expect(main.locator("details").first()).toBeVisible({ timeout: 2_000 });
+      await expect(main.getByLabel("Email address")).toBeVisible({ timeout: 2_000 });
     });
 
-    await visitor.getByLabel("Email address").fill(SUBSCRIBER);
-    await visitor.getByRole("button", { name: "Subscribe" }).click();
+    // The home page sign-up, not the one in the footer
+    await main.getByLabel("Email address").fill(SUBSCRIBER);
+    await main.getByRole("button", { name: "Subscribe" }).click();
     await expect(visitor.getByText("You're subscribed")).toBeVisible();
 
     await page.goto("/studio/subscribers");

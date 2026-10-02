@@ -18,11 +18,11 @@ const ProductList = async ({
   const wishlistIds = new Set(await getMyWishlistIds());
 
   return (
-    <section className="my-10">
-      {title && <h2 className="h2-bold mb-4">{title}</h2>}
+    <section className={title ? "my-10" : undefined}>
+      {title && <h2 className="h-section mb-8 text-[clamp(1.75rem,3vw,2.5rem)]">{title}</h2>}
 
       {limitedData.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-7">
           {limitedData.map((product) => (
             <ProductCard
               key={product.slug}
@@ -33,7 +33,7 @@ const ProductList = async ({
         </div>
       ) : (
         <div>
-          <p>No products found</p>
+          <p className="text-muted-foreground">No products found</p>
         </div>
       )}
     </section>

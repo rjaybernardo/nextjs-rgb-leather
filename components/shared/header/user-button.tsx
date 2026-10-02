@@ -14,8 +14,20 @@ import {
 import { signOutUser } from "@/lib/actions/user.actions";
 import { isAdmin } from "@/lib/auth-guard";
 
-const UserButton = async () => {
+// "icon" is the storefront header's round icon button
+const iconClass =
+  "inline-flex size-11 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
+const UserButton = async ({ variant = "default" }: { variant?: "default" | "icon" }) => {
   const session = await auth();
+
+  if (!session && variant === "icon") {
+    return (
+      <Link href="/sign-in" className={iconClass} aria-label="Sign in">
+        <User className="size-5" strokeWidth={1.7} />
+      </Link>
+    );
+  }
 
   if (!session) {
     return (
@@ -42,12 +54,16 @@ const UserButton = async () => {
           render={
             <button
               type="button"
-              className="relative ml-2 flex size-8 items-center justify-center rounded-full bg-gray-300"
-              aria-label="Open user menu"
+              className={
+                variant === "icon"
+                  ? iconClass
+                  : "relative ml-2 flex size-8 items-center justify-center rounded-full bg-gray-300"
+              }
+              aria-label="Open account menu"
             />
           }
         >
-          {firstInitial}
+          {variant === "icon" ? <User className="size-5" strokeWidth={1.7} /> : firstInitial}
         </DropdownMenuTrigger>
 
         <DropdownMenuContent className="w-56" align="end">
@@ -82,9 +98,14 @@ const UserButton = async () => {
               Wishlist
             </DropdownMenuItem>
             {(await isAdmin()) && (
-              <DropdownMenuItem render={<Link href="/admin/overview" />}>
-                Admin
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem render={<Link href="/admin/overview" />}>
+                  Store admin
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/studio" />}>
+                  Site Studio
+                </DropdownMenuItem>
+              </>
             )}
 
             <DropdownMenuItem className="mb-1 p-0">

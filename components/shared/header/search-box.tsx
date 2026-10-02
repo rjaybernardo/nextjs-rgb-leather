@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 // Plain GET form: works without JavaScript and keeps the URL shareable
-const SearchBox = ({ className }: { className?: string }) => {
+const SearchBox = ({ className, defaultValue }: { className?: string; defaultValue?: string }) => {
   return (
     <form
       action="/search"
@@ -21,6 +21,7 @@ const SearchBox = ({ className }: { className?: string }) => {
         id="header-search"
         name="q"
         type="search"
+        defaultValue={defaultValue}
         placeholder="Search bags, wallets, belts..."
         className="w-full"
       />

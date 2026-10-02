@@ -61,7 +61,7 @@ export default function ThemeForm({ theme }: { theme: Theme }) {
     >
       <div className="space-y-6">
         <fieldset className="space-y-3">
-          <legend className="text-sm font-medium">Brand color</legend>
+          <legend className="text-sm font-medium">Accent color</legend>
 
           <div className="flex flex-wrap gap-2">
             {THEME_PRESETS.map((preset) => (
@@ -173,26 +173,25 @@ export default function ThemeForm({ theme }: { theme: Theme }) {
           <p className="text-lg font-semibold">Leather bifold wallet</p>
           <p className="text-sm text-muted-foreground">Full-grain leather, hand-stitched.</p>
 
-          <div className="flex flex-wrap gap-2">
-            <span
-              className="inline-flex h-9 items-center px-4 text-sm font-medium"
-              style={{ backgroundColor: values.primaryColor, color: foreground, borderRadius: radius }}
-            >
-              Add to cart
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-9 items-center rounded-full bg-foreground px-4 text-sm font-medium text-background">
+              Add to bag
             </span>
             <span
-              className="inline-flex h-9 items-center border px-4 text-sm font-medium"
-              style={{ borderRadius: radius }}
+              className="inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold"
+              style={{ backgroundColor: values.primaryColor, color: foreground }}
+              title="Bag count"
             >
-              Save to wishlist
+              2
             </span>
           </div>
 
           <div
-            className="px-4 py-2 text-center text-sm"
+            className="space-y-1 px-4 py-5"
             style={{ backgroundColor: values.primaryColor, color: foreground, borderRadius: radius }}
           >
-            Announcement bar
+            <p className="font-semibold">What goes into one card sleeve</p>
+            <p className="text-sm opacity-75">Craft and newsletter bands use the accent color.</p>
           </div>
         </div>
       </section>

@@ -78,7 +78,7 @@ test("guest cart → sign up → checkout with COD → shipped → delivered and
 
   await test.step("reviews and places the order", async () => {
     await expect(page.getByText(productName()).first()).toBeVisible();
-    await expect(page.getByText("Cash on Delivery")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Cash on Delivery")).toBeVisible();
     await expect(page.getByText("+639171234567")).toBeVisible();
     await expect(page.getByText("Includes 12% VAT")).toBeVisible();
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import Pagination from "@/components/shared/pagination";
+import SearchBox from "@/components/shared/header/search-box";
 import ProductCard from "@/components/shared/product/product-card";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -207,6 +208,8 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
       </aside>
 
       <section className="space-y-4 md:col-span-4">
+        <SearchBox className="max-w-xl" defaultValue={q} />
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm text-muted-foreground">
@@ -250,7 +253,7 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
         </div>
 
         {products.data.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 lg:grid-cols-3">
             {products.data.map((product) => (
               <ProductCard
                 key={product.id}

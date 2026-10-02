@@ -3,8 +3,10 @@ import {
   Inter,
   Lora,
   Montserrat,
+  Newsreader,
   Playfair_Display,
   Poppins,
+  Schibsted_Grotesk,
 } from "next/font/google";
 
 import ThemeProvider from "@/components/theme-provider";
@@ -17,6 +19,7 @@ import { contrastText, radiusRem, type SiteSettings } from "@/lib/site-config";
 
 // Fonts offered in Site Studio → Theme. Only the chosen one is used by CSS,
 // so browsers only download that one.
+const schibsted = Schibsted_Grotesk({ subsets: ["latin"], display: "swap", preload: false });
 const inter = Inter({ subsets: ["latin"], display: "swap", preload: false });
 const poppins = Poppins({
   subsets: ["latin"],
@@ -28,7 +31,17 @@ const montserrat = Montserrat({ subsets: ["latin"], display: "swap", preload: fa
 const lora = Lora({ subsets: ["latin"], display: "swap", preload: false });
 const playfair = Playfair_Display({ subsets: ["latin"], display: "swap", preload: false });
 
+// Italic serif for heading accents (*words* in Studio headings)
+const accent = Newsreader({
+  subsets: ["latin"],
+  style: ["italic"],
+  weight: ["400", "500"],
+  display: "swap",
+  variable: "--font-accent",
+});
+
 const FONT_CLASS: Record<SiteSettings["theme"]["font"], string> = {
+  schibsted: schibsted.className,
   inter: inter.className,
   poppins: poppins.className,
   montserrat: montserrat.className,
@@ -60,11 +73,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// Brand color and corner roundness from Site Studio, layered over globals.css
+// Accent color and corner roundness from Site Studio, layered over globals.css
 const themeCss = ({ theme }: SiteSettings) => {
   const foreground = contrastText(theme.primaryColor);
 
-  return `:root,.dark{--primary:${theme.primaryColor};--primary-foreground:${foreground};--ring:${theme.primaryColor};--radius:${radiusRem(theme.radius)};}`;
+  return `:root,.dark{--brand:${theme.primaryColor};--brand-foreground:${foreground};--radius:${radiusRem(theme.radius)};}`;
 };
 
 export default async function RootLayout({
@@ -81,7 +94,7 @@ export default async function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: themeCss(settings) }} />
       </head>
 
-      <body className={FONT_CLASS[settings.theme.font]}>
+      <body className={`${FONT_CLASS[settings.theme.font]} ${accent.variable}`}>
         {/* Lets keyboard users jump past the header */}
         <a
           href="#main-content"

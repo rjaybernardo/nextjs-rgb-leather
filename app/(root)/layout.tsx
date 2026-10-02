@@ -7,10 +7,10 @@ export default function RootGroupLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="storefront flex min-h-screen flex-col">
       <Header />
 
-      <main id="main-content" tabIndex={-1} className="wrapper flex-1 outline-none">{children}</main>
+      <main id="main-content" tabIndex={-1} className="wrap flex-1 py-5 outline-none">{children}</main>
 
       <Footer />
     </div>

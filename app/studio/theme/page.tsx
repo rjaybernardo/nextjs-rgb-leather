@@ -16,8 +16,9 @@ export default async function StudioThemePage() {
       <div className="space-y-1">
         <h1 className="h2-bold">Theme</h1>
         <p className="text-muted-foreground">
-          Buttons, links, badges and the announcement bar use your brand color. Button text
-          switches between white and black automatically so it stays readable.
+          The accent color fills the craft and newsletter bands, the bag count and link
+          highlights. Text on it switches between white and black automatically so it stays
+          readable. Buttons stay ink-dark, as in the store design.
         </p>
       </div>
 
