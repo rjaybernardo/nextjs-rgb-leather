@@ -15,6 +15,14 @@ const links = [
     title: "Orders",
     href: "/user/orders",
   },
+  {
+    title: "Wishlist",
+    href: "/user/wishlist",
+  },
+  {
+    title: "Addresses",
+    href: "/user/addresses",
+  },
 ];
 
 export default function MainNav({

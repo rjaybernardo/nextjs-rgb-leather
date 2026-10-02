@@ -24,10 +24,12 @@ export const signUpDefaultValues = {
 
 export const shippingAddressDefaultValues = {
   fullName: "",
+  phone: "",
   streetAddress: "",
   city: "",
+  province: "",
   postalCode: "",
-  country: "",
+  country: "Philippines",
 };
 
 export const PAYMENT_METHODS = process.env.PAYMENT_METHODS

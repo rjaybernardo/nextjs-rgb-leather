@@ -10,7 +10,9 @@ export default defineConfig({
     seed: "tsx db/seed.ts",
   },
 
+  // Migrations need a direct connection: session-level advisory locks
+  // don't work reliably through Neon's pooler
   datasource: {
-    url: env("DATABASE_URL"),
+    url: process.env.DIRECT_DATABASE_URL ?? env("DATABASE_URL"),
   },
 });

@@ -16,7 +16,7 @@ import {
 import { assertRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { formatError } from "@/lib/utils/server";
-import { insertOrderSchema } from "@/lib/validators";
+import { insertOrderSchema, shippingAddressSchema } from "@/lib/validators";
 import type { CartItem } from "@/types";
 import { PAGE_SIZE, PAYMENT_METHODS, SERVER_URL } from "@/lib/constants";
 import { syncPayMongoPayment } from "@/lib/order-payment";
@@ -69,10 +69,10 @@ export async function createOrder(): Promise<CreateOrderResult> {
       };
     }
 
-    if (!user.address) {
+    if (!shippingAddressSchema.safeParse(user.address).success) {
       return {
         success: false,
-        message: "Please add a shipping address",
+        message: "Please choose a complete shipping address",
         redirectTo: "/shipping-address",
       };
     }

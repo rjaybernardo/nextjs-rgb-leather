@@ -5,15 +5,31 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import ProductPrice from "@/components/shared/product/product-price";
 import Rating from "@/components/shared/product/rating";
 import { Badge } from "@/components/ui/badge";
+import WishlistButton from "@/components/shared/product/wishlist-button";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import type { Product } from "@/types";
 
-const ProductCard = ({ product }: { product: Product }) => {
+type ProductCardProps = {
+  product: Product;
+  // Omit to hide the wishlist heart
+  wishlisted?: boolean;
+};
+
+const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
   const image = product.images[0];
 
   return (
     <Card className="w-full overflow-hidden">
-      <CardHeader className="p-0">
+      <CardHeader className="relative p-0">
+        {wishlisted !== undefined && (
+          <WishlistButton
+            productId={product.id}
+            productName={product.name}
+            initialWishlisted={wishlisted}
+            className="absolute right-2 top-2 z-10"
+          />
+        )}
+
         <Link href={`/product/${product.slug}`} className="block">
           {image ? (
             <Image

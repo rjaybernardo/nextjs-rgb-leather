@@ -20,6 +20,8 @@ import { getUserById } from "@/lib/actions/user.actions";
 import { getPaymentMethodLabel, PAYMENT_METHODS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import type { ShippingAddress } from "@/types";
+import AddressSummary from "@/components/shared/address/address-summary";
+import { shippingAddressSchema } from "@/lib/validators";
 
 import PlaceOrderForm from "./place-order-form";
 
@@ -41,7 +43,8 @@ const PlaceOrderPage = async () => {
     redirect("/cart");
   }
 
-  if (!user.address) {
+  // Older addresses may lack the mobile number or province couriers need
+  if (!shippingAddressSchema.safeParse(user.address).success) {
     redirect("/shipping-address");
   }
 
@@ -63,14 +66,7 @@ const PlaceOrderPage = async () => {
             <CardContent className="space-y-4 p-4">
               <h2 className="text-xl">Shipping Address</h2>
 
-              <div className="space-y-1">
-                <p>{userAddress.fullName}</p>
-
-                <p>
-                  {userAddress.streetAddress}, {userAddress.city},{" "}
-                  {userAddress.postalCode}, {userAddress.country}
-                </p>
-              </div>
+              <AddressSummary address={userAddress} />
 
               <Link href="/shipping-address">
                 <Button variant="outline">Edit</Button>

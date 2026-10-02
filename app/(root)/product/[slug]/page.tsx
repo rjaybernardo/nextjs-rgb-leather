@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getProductBySlug } from "@/lib/actions/product.actions";
 import ProductImages from "@/components/shared/product/product-images";
 import CartButton from "@/components/shared/product/cart-button";
+import WishlistButton from "@/components/shared/product/wishlist-button";
+import { getMyWishlistIds } from "@/lib/actions/wishlist.actions";
 import Rating from "@/components/shared/product/rating";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 
@@ -20,7 +22,10 @@ type ProductDetailsPageProps = {
 const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
   const { slug } = await params;
 
-  const product = await getProductBySlug(slug);
+  const [product, wishlistIds] = await Promise.all([
+    getProductBySlug(slug),
+    getMyWishlistIds(),
+  ]);
 
   if (!product) {
     notFound();
@@ -104,6 +109,15 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
                   />
                 </div>
               )}
+
+              <div className="mt-2 flex">
+                <WishlistButton
+                  variant="full"
+                  productId={product.id}
+                  productName={product.name}
+                  initialWishlisted={wishlistIds.includes(product.id)}
+                />
+              </div>
             </CardContent>
           </Card>
         </div>

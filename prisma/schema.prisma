@@ -8,41 +8,44 @@ datasource db {
 }
 
 model Product {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
-  slug        String      @unique(map: "product_slug_idx")
+  slug        String         @unique(map: "product_slug_idx")
   category    String
   images      String[]
   brand       String
   description String
   stock       Int
-  price       Decimal     @default(0) @db.Decimal(12, 2)
-  rating      Decimal     @default(0) @db.Decimal(3, 2)
-  numReviews  Int         @default(0)
-  isFeatured  Boolean     @default(false)
+  price       Decimal        @default(0) @db.Decimal(12, 2)
+  rating      Decimal        @default(0) @db.Decimal(3, 2)
+  numReviews  Int            @default(0)
+  isFeatured  Boolean        @default(false)
   banner      String?
-  createdAt   DateTime    @default(now()) @db.Timestamp(6)
+  createdAt   DateTime       @default(now()) @db.Timestamp(6)
   OrderItem   OrderItem[]
   Review      Review[]
+  wishlist    WishlistItem[]
 }
 
 model User {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String    @default("NO_NAME")
-  email         String    @unique(map: "user_email_idx")
-  emailVerified DateTime? @db.Timestamp(6)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String         @default("NO_NAME")
+  email         String         @unique(map: "user_email_idx")
+  emailVerified DateTime?      @db.Timestamp(6)
   image         String?
   password      String?
-  role          String    @default("user")
-  address       Json?     @db.Json
+  role          String         @default("user")
+  address       Json?          @db.Json
   paymentMethod String?
-  createdAt     DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime       @updatedAt
   account       Account[]
   Cart          Cart[]
   Order         Order[]
   Review        Review[]
   session       Session[]
+  addresses     Address[]
+  wishlist      WishlistItem[]
 }
 
 model Account {
@@ -162,4 +165,33 @@ model RateLimit {
   key     String   @id
   count   Int      @default(0)
   resetAt DateTime @db.Timestamp(6)
+}
+
+// Customer address book; User.address holds the one chosen for checkout
+model Address {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @db.Uuid
+  label         String?
+  fullName      String
+  phone         String   @default("")
+  streetAddress String
+  city          String
+  province      String   @default("")
+  postalCode    String
+  country       String   @default("Philippines")
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  userId    String   @db.Uuid
+  productId String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([userId, productId])
 }

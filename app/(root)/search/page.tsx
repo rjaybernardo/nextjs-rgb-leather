@@ -8,6 +8,7 @@ import {
   getAllCategories,
   getAllProducts,
 } from "@/lib/actions/product.actions";
+import { getMyWishlistIds } from "@/lib/actions/wishlist.actions";
 import { cn } from "@/lib/utils";
 
 type SearchParams = {
@@ -64,7 +65,7 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
 
   const page = Number(params.page) || 1;
 
-  const [products, categories] = await Promise.all([
+  const [products, categories, wishlistIds] = await Promise.all([
     getAllProducts({
       query: q,
       category,
@@ -74,7 +75,10 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
       page,
     }),
     getAllCategories(),
+    getMyWishlistIds(),
   ]);
+
+  const wishlisted = new Set(wishlistIds);
 
   // Build a link that changes one filter and resets to the first page
   const filterUrl = (changes: Partial<SearchParams>) => {
@@ -245,7 +249,11 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
         {products.data.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {products.data.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                wishlisted={wishlisted.has(product.id)}
+              />
             ))}
           </div>
         ) : (

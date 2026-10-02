@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import ShippingAddressForm from "./shipping-address-form";
+import { getMyAddresses } from "@/lib/actions/address.actions";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
 import type { ShippingAddress } from "@/types";
+
+import ShippingAddressPicker from "./shipping-address-picker";
 
 export const metadata: Metadata = {
   title: "Shipping Address",
@@ -22,12 +24,27 @@ const ShippingAddressPage = async () => {
   const userId = session?.user?.id;
 
   if (!userId) {
-    throw new Error("User ID not found");
+    redirect("/sign-in?callbackUrl=/shipping-address");
   }
 
-  const user = await getUserById(userId);
+  const [user, addresses] = await Promise.all([
+    getUserById(userId),
+    getMyAddresses(),
+  ]);
 
-  return <ShippingAddressForm address={user.address as ShippingAddress} />;
+  // Preselect the address last used at checkout, if it's still saved
+  const current = user.address as ShippingAddress | null;
+
+  const selectedId = current
+    ? addresses.find(
+        (address) =>
+          address.fullName === current.fullName &&
+          address.streetAddress === current.streetAddress &&
+          address.postalCode === current.postalCode,
+      )?.id
+    : undefined;
+
+  return <ShippingAddressPicker addresses={addresses} selectedId={selectedId} />;
 };
 
 export default ShippingAddressPage;

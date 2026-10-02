@@ -119,20 +119,48 @@ export const insertCartSchema = z.object({
 });
 
 // Shipping Address
+// Philippine mobile number: 09XXXXXXXXX or +639XXXXXXXXX (spaces/dashes ok)
+export const normalizePhone = (value: string) => value.replace(/[\s()-]/g, "");
+
+const PH_MOBILE = /^(\+639|09)\d{9}$/;
+
 export const shippingAddressSchema = z.object({
-  fullName: z.string().min(3, "Name must be at least 3 characters"),
+  fullName: z.string().trim().min(3, "Name must be at least 3 characters"),
 
-  streetAddress: z.string().min(3, "Address must be at least 3 characters"),
+  phone: z
+    .string()
+    .trim()
+    .refine(
+      (value) => PH_MOBILE.test(normalizePhone(value)),
+      "Enter a mobile number like 0917 123 4567",
+    ),
 
-  city: z.string().min(3, "City must be at least 3 characters"),
+  streetAddress: z
+    .string()
+    .trim()
+    .min(3, "Enter house number, street and barangay"),
 
-  postalCode: z.string().min(3, "Postal code must be at least 3 characters"),
+  city: z.string().trim().min(2, "Enter your city or municipality"),
 
-  country: z.string().min(3, "Country must be at least 3 characters"),
+  province: z.string().trim().min(2, "Enter your province"),
+
+  postalCode: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/, "ZIP code must be 4 digits"),
+
+  country: z.string().trim().min(2, "Enter your country"),
 
   lat: z.number().optional(),
 
   lng: z.number().optional(),
+});
+
+// Address book entry
+export const addressSchema = shippingAddressSchema.extend({
+  label: z.string().trim().max(30, "Label must be at most 30 characters").optional(),
+
+  isDefault: z.boolean().optional(),
 });
 
 // Payment Method

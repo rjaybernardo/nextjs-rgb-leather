@@ -56,6 +56,25 @@ export function formatNumber(number: number): string {
   return NUMBER_FORMATTER.format(number);
 }
 
+// One-line address, skipping any missing parts (older addresses lack some)
+export function formatAddress(address: {
+  streetAddress?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
+}) {
+  const cityLine = [address.city, address.province].filter(Boolean).join(", ");
+
+  return [
+    address.streetAddress,
+    [cityLine, address.postalCode].filter(Boolean).join(" "),
+    address.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 // Shorten ID
 export function formatId(id: string): string {
   return `..${id.substring(id.length - 6)}`;

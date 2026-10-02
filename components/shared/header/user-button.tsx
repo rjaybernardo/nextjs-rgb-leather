@@ -75,6 +75,12 @@ const UserButton = async () => {
             >
               Order History
             </DropdownMenuItem>
+
+            <DropdownMenuItem
+              render={<Link href="/user/wishlist" className="w-full" />}
+            >
+              Wishlist
+            </DropdownMenuItem>
             {(await isAdmin()) && (
               <DropdownMenuItem render={<Link href="/admin/overview" />}>
                 Admin

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useTransition } from "react";
 
+import AddressSummary from "@/components/shared/address/address-summary";
 import OrderStatusBadge from "@/components/shared/order-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -209,12 +210,7 @@ const OrderDetailsTable = ({
             <CardContent className="space-y-4 p-4">
               <h2 className="pb-2 text-xl">Shipping</h2>
 
-              <p>{address.fullName}</p>
-
-              <p>
-                {address.streetAddress}, {address.city}, {address.postalCode},{" "}
-                {address.country}
-              </p>
+              <AddressSummary address={address} />
 
               <div className="flex flex-wrap gap-2">
                 {shippedAt && (
