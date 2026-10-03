@@ -230,6 +230,24 @@ model StoreSettings {
   updatedAt       DateTime @updatedAt
 }
 
+// API keys set in Admin → Settings, encrypted with AES-256-GCM (lib/secrets.ts).
+// One row per key; a missing row means the environment variable is used.
+model StoreSecret {
+  name      String   @id
+  value     String
+  // Last 4 characters, so admins can tell which key is saved
+  hint      String
+  updatedAt DateTime @updatedAt
+}
+
+// Non-secret integration settings (payment methods, email sender), validated
+// on read like SiteSettings; fields left out fall back to the environment
+model IntegrationSettings {
+  id        Int      @id @default(1)
+  data      Json     @db.Json
+  updatedAt DateTime @updatedAt
+}
+
 // Who did what in admin; actor details are copied so entries survive user deletion
 model AuditLog {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

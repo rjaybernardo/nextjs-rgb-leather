@@ -4,16 +4,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import * as Sentry from "@sentry/nextjs";
 
-const PAYMONGO_API_URL = "https://api.paymongo.com/v1";
+import { getPaymentSettings, getSecret } from "@/lib/integrations";
 
-// Methods must be activated on your PayMongo account; override with
-// PAYMONGO_PAYMENT_METHODS (comma-separated) if some aren't enabled yet
-export const PAYMONGO_PAYMENT_METHOD_TYPES = (
-  process.env.PAYMONGO_PAYMENT_METHODS || "gcash,paymaya,card,qrph"
-)
-  .split(",")
-  .map((method) => method.trim())
-  .filter(Boolean);
+const PAYMONGO_API_URL = "https://api.paymongo.com/v1";
 
 export type PayMongoCheckoutSession = {
   id: string;
@@ -41,8 +34,9 @@ type CheckoutLineItem = {
   images?: string[];
 };
 
-function getAuthHeader() {
-  const secretKey = process.env.PAYMONGO_SECRET_KEY;
+// Keys come from Admin → Settings, or PAYMONGO_SECRET_KEY
+async function getAuthHeader() {
+  const secretKey = await getSecret("PAYMONGO_SECRET_KEY");
 
   if (!secretKey) {
     throw new Error("Online payments are not configured yet");
@@ -55,7 +49,7 @@ async function paymongoRequest<T>(path: string, init?: RequestInit) {
   const response = await fetch(`${PAYMONGO_API_URL}${path}`, {
     ...init,
     headers: {
-      Authorization: getAuthHeader(),
+      Authorization: await getAuthHeader(),
       "Content-Type": "application/json",
       Accept: "application/json",
       ...init?.headers,
@@ -98,6 +92,10 @@ export async function createCheckoutSession(params: {
   billing: { name: string; email: string };
   metadata: Record<string, string>;
 }) {
+  // Wallets and cards offered in PayMongo's checkout (Admin → Settings);
+  // each must be activated on the PayMongo account
+  const { paymongoMethods } = await getPaymentSettings();
+
   const { data } = await paymongoRequest<PayMongoCheckoutSession>(
     "/checkout_sessions",
     {
@@ -106,7 +104,7 @@ export async function createCheckoutSession(params: {
         data: {
           attributes: {
             line_items: params.lineItems,
-            payment_method_types: PAYMONGO_PAYMENT_METHOD_TYPES,
+            payment_method_types: paymongoMethods,
             reference_number: params.referenceNumber,
             description: params.description,
             success_url: params.successUrl,
@@ -138,7 +136,7 @@ export async function retrieveCheckoutSession(checkoutSessionId: string) {
  * The signature is HMAC-SHA256 of "<timestamp>.<raw body>" keyed with the
  * webhook's secret key; compare against li in live mode and te in test mode.
  */
-export function verifyWebhookSignature({
+export async function verifyWebhookSignature({
   rawBody,
   signatureHeader,
   livemode,
@@ -147,7 +145,7 @@ export function verifyWebhookSignature({
   signatureHeader: string | null;
   livemode: boolean;
 }) {
-  const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
+  const webhookSecret = await getSecret("PAYMONGO_WEBHOOK_SECRET");
 
   if (!webhookSecret || !signatureHeader) {
     return false;

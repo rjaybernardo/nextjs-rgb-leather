@@ -3,6 +3,7 @@ import "server-only";
 import * as Sentry from "@sentry/nextjs";
 import { Resend } from "resend";
 
+import { getEmailSettings, getSecret } from "@/lib/integrations";
 import { getSiteSettings } from "@/lib/site";
 
 export type Email = {
@@ -17,36 +18,54 @@ export type Email = {
   idempotencyKey?: string;
 };
 
-let client: Resend | null = null;
+export type SendResult = { sent: true } | { sent: false; error: string };
 
-const getResend = () => {
-  const apiKey = process.env.RESEND_API_KEY;
+// One client per key, so a key changed in admin takes effect immediately
+let client: { apiKey: string; resend: Resend } | null = null;
+
+const getResend = async () => {
+  const apiKey = await getSecret("RESEND_API_KEY");
 
   if (!apiKey) return null;
 
-  client ??= new Resend(apiKey);
+  if (client?.apiKey !== apiKey) {
+    client = { apiKey, resend: new Resend(apiKey) };
+  }
 
-  return client;
+  return client.resend;
 };
 
 /*
- * Sends through Resend when RESEND_API_KEY is set; otherwise prints the
- * email to the server log (handy in development).
+ * Sends through Resend when an API key is set (Admin → Settings, or
+ * RESEND_API_KEY); otherwise prints the email to the server log (handy in
+ * development).
  *
- * EMAIL_FROM must use a domain verified in Resend, e.g.
+ * The sender (Admin → Settings, or EMAIL_FROM) must use a domain verified
+ * in Resend, e.g.
  * "Your Store <orders@yourdomain.ph>". Resend's test sender
  * (onboarding@resend.dev) only delivers to your own Resend account email.
  *
  * Never throws: a failed email must not fail the order or sign-up, so
- * failures are logged and reported to Sentry instead.
+ * failures are logged and reported to Sentry instead. The result is only
+ * for callers that want to show it, like the admin's test email.
  */
-export async function sendEmail(email: Email) {
-  const resend = getResend();
+export async function sendEmail(email: Email): Promise<SendResult> {
+  let resend: Resend | null;
+  let settings: Awaited<ReturnType<typeof getEmailSettings>>;
+
+  try {
+    [resend, settings] = await Promise.all([getResend(), getEmailSettings()]);
+  } catch (error) {
+    console.error(`Failed to load email settings for "${email.category}" email`, error);
+    Sentry.captureException(error, { tags: { provider: "resend", category: email.category } });
+
+    return { sent: false, error: "Email settings could not be loaded" };
+  }
 
   if (!resend) {
     console.info(
       [
-        "─── Email (logged, not sent: RESEND_API_KEY is not set) ───",
+        "─── Email (logged, not sent: no Resend API key is set) ───",
         `To: ${email.to}`,
         `Subject: ${email.subject}`,
         "",
@@ -54,22 +73,18 @@ export async function sendEmail(email: Email) {
         "────────────────────────────────",
       ].join("\n"),
     );
-    return;
+    return { sent: false, error: "No Resend API key is set, so the email was only written to the server log." };
   }
 
   try {
     const { error } = await resend.emails.send(
       {
-        from:
-          process.env.EMAIL_FROM ||
-          `${(await getSiteSettings()).siteName} <onboarding@resend.dev>`,
+        from: settings.from || `${(await getSiteSettings()).siteName} <onboarding@resend.dev>`,
         to: email.to,
         subject: email.subject,
         text: email.text,
         ...(email.html ? { html: email.html } : {}),
-        ...(process.env.EMAIL_REPLY_TO
-          ? { replyTo: process.env.EMAIL_REPLY_TO }
-          : {}),
+        ...(settings.replyTo ? { replyTo: settings.replyTo } : {}),
         tags: [{ name: "category", value: email.category }],
       },
       email.idempotencyKey
@@ -80,11 +95,15 @@ export async function sendEmail(email: Email) {
     if (error) {
       throw new Error(`Resend: ${error.message}`);
     }
+
+    return { sent: true };
   } catch (error) {
     console.error(`Failed to send "${email.category}" email`, error);
 
     Sentry.captureException(error, {
       tags: { provider: "resend", category: email.category },
     });
+
+    return { sent: false, error: error instanceof Error ? error.message : "The email could not be sent" };
   }
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import AccentText from "@/components/shared/accent-text";
 import Wordmark from "@/components/shared/header/wordmark";
 import { getAllCategories } from "@/lib/actions/product.actions";
-import { PAYMENT_METHODS } from "@/lib/constants";
+import { getCheckoutPaymentMethods, getPaymentSettings } from "@/lib/integrations";
 import { getFooterPages, getSiteSettings } from "@/lib/site";
 
 import FooterNewsletter from "./footer-newsletter";
@@ -17,19 +17,23 @@ const SOCIAL_LABELS = {
   lazada: "Lazada",
 } as const;
 
-// Chips for the payment methods this shop actually takes
-const PAYMENT_CHIPS: Record<string, string[]> = {
-  PayMongo: ["GCash", "Maya", "Visa", "Mastercard", "QR Ph"],
-  CashOnDelivery: ["Cash on delivery"],
+// Chips for the payment methods this shop actually takes (Admin → Settings)
+const PAYMONGO_CHIPS: Record<string, string[]> = {
+  gcash: ["GCash"],
+  paymaya: ["Maya"],
+  card: ["Visa", "Mastercard"],
+  qrph: ["QR Ph"],
 };
 
 const columnLink = "text-[var(--on-night-muted)] transition-colors hover:text-[var(--on-night)]";
 
 const Footer = async () => {
-  const [settings, pages, categories] = await Promise.all([
+  const [settings, pages, categories, checkout, payments] = await Promise.all([
     getSiteSettings(),
     getFooterPages(),
     getAllCategories(),
+    getCheckoutPaymentMethods(),
+    getPaymentSettings(),
   ]);
 
   const { siteName, footer, contact, social } = settings;
@@ -38,7 +42,11 @@ const Footer = async () => {
     .filter((key) => social[key])
     .map((key) => ({ label: SOCIAL_LABELS[key], href: social[key] }));
 
-  const chips = PAYMENT_METHODS.flatMap((method) => PAYMENT_CHIPS[method] ?? []);
+  const chips = checkout.methods.flatMap((method) =>
+    method === "PayMongo"
+      ? payments.paymongoMethods.flatMap((type) => PAYMONGO_CHIPS[type] ?? [])
+      : ["Cash on delivery"],
+  );
 
   const copyright =
     footer.copyright || `© ${new Date().getFullYear()} ${siteName}. All rights reserved.`;

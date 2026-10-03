@@ -8,12 +8,45 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { authConfig } from "@/auth.config";
 import { persistGuestCart } from "@/lib/guest-cart";
+import { getGoogleCredentials } from "@/lib/integrations";
 import { prisma } from "@/lib/prisma";
 
-// Google sign-in turns on once both credentials are set
-export const googleSignInEnabled = Boolean(
-  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
-);
+// Google credentials from Admin → Settings or AUTH_GOOGLE_ID/SECRET. A failed
+// lookup turns Google off rather than breaking password sign-in.
+async function googleCredentials() {
+  try {
+    return await getGoogleCredentials();
+  } catch (error) {
+    console.error("Could not load Google sign-in settings", error);
+    return null;
+  }
+}
+
+// Google sign-in turns on once both the client ID and secret are set
+export async function isGoogleSignInEnabled() {
+  return (await googleCredentials()) !== null;
+}
+
+const googleProvider = ({ clientId, clientSecret }: { clientId: string; clientSecret: string }) =>
+  Google({
+    clientId,
+    clientSecret,
+    // Lets a customer who registered with a password sign in with
+    // Google using the same email. Safe because Google verifies
+    // email ownership, and the signIn callback rejects unverified ones.
+    allowDangerousEmailAccountLinking: true,
+    profile(profile) {
+      return {
+        id: profile.sub,
+        name: profile.name || profile.email?.split("@")[0] || "NO_NAME",
+        email: profile.email,
+        image: profile.picture,
+        // New accounts are customers; Google already confirmed the email
+        role: "user",
+        emailVerified: profile.email_verified ? new Date() : null,
+      };
+    },
+  });
 
 export const authConfigWithCredentials = {
   ...authConfig,
@@ -72,27 +105,6 @@ export const authConfigWithCredentials = {
       },
     }),
 
-    ...(googleSignInEnabled
-      ? [
-          Google({
-            // Lets a customer who registered with a password sign in with
-            // Google using the same email. Safe because Google verifies
-            // email ownership, and the signIn callback rejects unverified ones.
-            allowDangerousEmailAccountLinking: true,
-            profile(profile) {
-              return {
-                id: profile.sub,
-                name: profile.name || profile.email?.split("@")[0] || "NO_NAME",
-                email: profile.email,
-                image: profile.picture,
-                // New accounts are customers; Google already confirmed the email
-                role: "user",
-                emailVerified: profile.email_verified ? new Date() : null,
-              };
-            },
-          }),
-        ]
-      : []),
   ],
 
   events: {
@@ -161,6 +173,16 @@ export const authConfigWithCredentials = {
   },
 } satisfies NextAuthConfig;
 
-export const { handlers, auth, signIn, signOut } = NextAuth(
-  authConfigWithCredentials,
-);
+// Built per request so Google credentials saved in admin apply without a
+// redeploy
+export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
+  const google = await googleCredentials();
+
+  return {
+    ...authConfigWithCredentials,
+    providers: [
+      ...authConfigWithCredentials.providers,
+      ...(google ? [googleProvider(google)] : []),
+    ],
+  };
+});

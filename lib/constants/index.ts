@@ -1,3 +1,9 @@
+import {
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHODS as ALL_PAYMENT_METHODS,
+  type PaymentMethod,
+} from "@/lib/integration-config";
+
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Your Store";
 
 export const APP_DESCRIPTION =
@@ -32,20 +38,12 @@ export const shippingAddressDefaultValues = {
   country: "Philippines",
 };
 
-export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
-  ? process.env.PAYMENT_METHODS.split(",").map((method) => method.trim())
-  : ["PayMongo", "CashOnDelivery"];
-
-export const DEFAULT_PAYMENT_METHOD =
-  process.env.DEFAULT_PAYMENT_METHOD || "PayMongo";
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  PayMongo: "GCash, Maya, card or QR Ph",
-  CashOnDelivery: "Cash on Delivery",
-};
+// Every payment method the store knows. Which ones customers can choose is
+// set in Admin → Settings (see getCheckoutPaymentMethods in lib/integrations)
+export const PAYMENT_METHODS: readonly string[] = ALL_PAYMENT_METHODS;
 
 export const getPaymentMethodLabel = (method: string) =>
-  PAYMENT_METHOD_LABELS[method] ?? method;
+  PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? method;
 
 const numberFromEnv = (value: string | undefined, fallback: number) => {
   const parsed = Number(value);

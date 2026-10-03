@@ -492,23 +492,27 @@ http://localhost:3000
 
 ## 🔒 Environment Variables
 
-The project uses environment variables for application and database configuration.
+Copy `.env.example` to `.env`; every variable is explained there. The `.env` file should **never be committed to GitHub**.
 
-Typical variables include:
+**Required on every deployment:**
 
-```env
-NEXT_PUBLIC_APP_NAME=
-NEXT_PUBLIC_APP_DESCRIPTION=
-NEXT_PUBLIC_SERVER_URL=
+| Variable | Why |
+| --- | --- |
+| `DATABASE_URL`, `DIRECT_DATABASE_URL` | The database; admin settings are stored in it, so it can't be set in admin |
+| `AUTH_SECRET` | Signs logins and encrypts keys saved in admin |
+| `NEXT_PUBLIC_SERVER_URL` | The site's public address |
+| `UPLOADTHING_TOKEN` | Product image uploads |
 
-DATABASE_URL=
+**Set in Admin → Settings instead** (or as variables, as a fallback):
 
-AUTH_SECRET=
+- **Payments:** PayMongo secret key and webhook secret, which payment methods are on, and which wallets PayMongo offers
+- **Email:** Resend API key, sender and reply-to address, with a "Send me a test email" button
+- **Sign in with Google:** client ID and secret
+- **Shipping:** flat fee and free-shipping minimum
 
-LATEST_PRODUCTS_LIMIT=
-```
+Keys saved in admin are encrypted (AES-256-GCM) with a key derived from `AUTH_SECRET`, or from `SETTINGS_ENCRYPTION_KEY` if it's set. They are write-only: the admin page shows only the last 4 characters. Changing `AUTH_SECRET` makes saved keys unreadable, and the admin page then asks for them again.
 
-The `.env` file should **never be committed to GitHub**.
+Running the production build yourself with `next start` (not on Vercel) also needs `AUTH_TRUST_HOST=true`.
 
 ## 📦 Deployment
 

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { getUserById } from "@/lib/actions/user.actions";
+import { getCheckoutPaymentMethods } from "@/lib/integrations";
 
 import PaymentMethodForm from "./payment-method-form";
 
@@ -18,9 +19,18 @@ const PaymentMethodPage = async () => {
     redirect("/sign-in");
   }
 
-  const user = await getUserById(userId);
+  const [user, { methods, defaultMethod }] = await Promise.all([
+    getUserById(userId),
+    getCheckoutPaymentMethods(),
+  ]);
 
-  return <PaymentMethodForm preferredPaymentMethod={user.paymentMethod} />;
+  return (
+    <PaymentMethodForm
+      preferredPaymentMethod={user.paymentMethod}
+      methods={methods}
+      defaultMethod={defaultMethod}
+    />
+  );
 };
 
 export default PaymentMethodPage;

@@ -32,9 +32,9 @@ import type { CartItem } from "@/types";
 import {
   LOW_STOCK_THRESHOLD,
   PAGE_SIZE,
-  PAYMENT_METHODS,
   SERVER_URL,
 } from "@/lib/constants";
+import { getCheckoutPaymentMethods } from "@/lib/integrations";
 import { syncPayMongoPayment } from "@/lib/order-payment";
 import {
   createCheckoutSession,
@@ -93,7 +93,9 @@ export async function createOrder(): Promise<CreateOrderResult> {
       };
     }
 
-    if (!user.paymentMethod || !PAYMENT_METHODS.includes(user.paymentMethod)) {
+    const { methods } = await getCheckoutPaymentMethods();
+
+    if (!user.paymentMethod || !(methods as string[]).includes(user.paymentMethod)) {
       return {
         success: false,
         message: "Please select a payment method",

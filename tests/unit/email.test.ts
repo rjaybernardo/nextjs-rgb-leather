@@ -21,6 +21,19 @@ vi.mock("@/lib/site", async () => {
   };
 });
 
+// No keys saved in Admin → Settings, so the environment variables are used
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    storeSecret: { findMany: async () => [] },
+    integrationSettings: { findUnique: async () => null },
+  },
+}));
+
+vi.mock("next/server", () => ({ connection: async () => {} }));
+
+// unstable_cache needs a running Next.js server; call queries directly
+vi.mock("@/lib/cached-query", () => ({ cachedQuery: (fn: unknown) => fn }));
+
 vi.mock("@sentry/nextjs", () => ({
   captureException: (...args: unknown[]) => captureException(...args),
 }));
@@ -116,7 +129,10 @@ describe("sendEmail", () => {
 
     const sendEmail = await loadSendEmail();
 
-    await expect(sendEmail(await orderPlacedEmail("juan@example.com", order))).resolves.toBeUndefined();
+    await expect(sendEmail(await orderPlacedEmail("juan@example.com", order))).resolves.toEqual({
+      sent: false,
+      error: "Resend: Domain not verified",
+    });
     expect(captureException).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Resend: Domain not verified" }),
       expect.objectContaining({ tags: { provider: "resend", category: "order_placed" } }),
@@ -129,7 +145,10 @@ describe("sendEmail", () => {
 
     const sendEmail = await loadSendEmail();
 
-    await expect(sendEmail(await orderPlacedEmail("juan@example.com", order))).resolves.toBeUndefined();
+    await expect(sendEmail(await orderPlacedEmail("juan@example.com", order))).resolves.toEqual({
+      sent: false,
+      error: "fetch failed",
+    });
     expect(captureException).toHaveBeenCalledTimes(1);
   });
 });

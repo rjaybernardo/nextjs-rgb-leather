@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/table";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
-import { getPaymentMethodLabel, PAYMENT_METHODS } from "@/lib/constants";
+import { getPaymentMethodLabel } from "@/lib/constants";
+import { getCheckoutPaymentMethods } from "@/lib/integrations";
 import { formatCurrency } from "@/lib/utils";
 import type { ShippingAddress } from "@/types";
 import AddressSummary from "@/components/shared/address/address-summary";
@@ -39,7 +40,11 @@ const PlaceOrderPage = async () => {
     redirect("/sign-in");
   }
 
-  const [cart, user] = await Promise.all([getMyCart(), getUserById(userId)]);
+  const [cart, user, { methods }] = await Promise.all([
+    getMyCart(),
+    getUserById(userId),
+    getCheckoutPaymentMethods(),
+  ]);
 
   if (!cart || cart.items.length === 0) {
     redirect("/cart");
@@ -50,7 +55,8 @@ const PlaceOrderPage = async () => {
     redirect("/shipping-address");
   }
 
-  if (!user.paymentMethod || !PAYMENT_METHODS.includes(user.paymentMethod)) {
+  // A method turned off in admin since it was chosen sends them back
+  if (!user.paymentMethod || !(methods as string[]).includes(user.paymentMethod)) {
     redirect("/payment-method");
   }
 

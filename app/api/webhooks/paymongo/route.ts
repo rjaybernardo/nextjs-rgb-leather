@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
   const attributes = event.data?.attributes;
 
-  const isValid = verifyWebhookSignature({
+  const isValid = await verifyWebhookSignature({
     rawBody,
     signatureHeader: request.headers.get("paymongo-signature"),
     livemode: attributes?.livemode === true,

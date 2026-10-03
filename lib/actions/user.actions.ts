@@ -29,6 +29,7 @@ import {
   updateUserSchema,
 } from "../validators";
 import { PAGE_SIZE } from "@/lib/constants";
+import { getCheckoutPaymentMethods } from "@/lib/integrations";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "../generated/prisma/client";
 
@@ -247,6 +248,14 @@ export async function updateUserPaymentMethod(
     }
 
     const paymentMethod = paymentMethodSchema.parse(data);
+    const { methods } = await getCheckoutPaymentMethods();
+
+    if (!(methods as string[]).includes(paymentMethod.type)) {
+      return {
+        success: false,
+        message: "That payment method isn't available right now. Please choose another.",
+      };
+    }
 
     await prisma.user.update({
       where: {

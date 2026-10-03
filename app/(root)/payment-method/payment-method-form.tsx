@@ -16,21 +16,22 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { updateUserPaymentMethod } from "@/lib/actions/user.actions";
-import {
-  DEFAULT_PAYMENT_METHOD,
-  getPaymentMethodLabel,
-  PAYMENT_METHODS,
-} from "@/lib/constants";
+import { getPaymentMethodLabel } from "@/lib/constants";
 import { paymentMethodSchema } from "@/lib/validators";
 
 type PaymentMethodFormProps = {
   preferredPaymentMethod: string | null;
+  // Methods turned on in Admin → Settings
+  methods: string[];
+  defaultMethod: string | null;
 };
 
 type PaymentMethodFormValues = z.infer<typeof paymentMethodSchema>;
 
 const PaymentMethodForm = ({
   preferredPaymentMethod,
+  methods,
+  defaultMethod,
 }: PaymentMethodFormProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -39,10 +40,9 @@ const PaymentMethodForm = ({
     resolver: zodResolver(paymentMethodSchema),
     defaultValues: {
       type:
-        preferredPaymentMethod &&
-        PAYMENT_METHODS.includes(preferredPaymentMethod)
+        preferredPaymentMethod && methods.includes(preferredPaymentMethod)
           ? preferredPaymentMethod
-          : DEFAULT_PAYMENT_METHOD,
+          : (defaultMethod ?? ""),
     },
   });
 
@@ -85,7 +85,14 @@ const PaymentMethodForm = ({
                 <FieldLabel>Payment Method</FieldLabel>
 
                 <div className="flex flex-col gap-3">
-                  {PAYMENT_METHODS.map((paymentMethod) => {
+                  {methods.length === 0 && (
+                    <p className="rounded-lg border p-4 text-sm text-muted-foreground">
+                      Checkout isn&apos;t available right now. Please try again later or
+                      contact us to order.
+                    </p>
+                  )}
+
+                  {methods.map((paymentMethod) => {
                     const id = `payment-${paymentMethod
                       .toLowerCase()
                       .replace(/[^a-z0-9]+/g, "-")}`;
