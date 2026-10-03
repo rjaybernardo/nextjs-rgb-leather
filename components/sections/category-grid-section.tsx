@@ -71,8 +71,14 @@ const CategoryGridSection = async ({ data }: { data: SectionData<"category_grid"
     <Section id="categories" innerClassName="flex flex-col gap-8">
       <SectionHeader title={data.title} subtitle={data.subtitle} linkText="Shop all" linkUrl="/search" />
 
-      {data.layout === "carousel" ? (
-        <Carousel label={stripAccents(data.title)} columns="four">
+      {data.layout === "carousel" || categories.length >= 3 ? (
+        // A carousel when chosen in Studio; otherwise from 3 categories up,
+        // tiles swipe on phones instead of stacking, and grid from tablets
+        <Carousel
+          label={stripAccents(data.title)}
+          columns={data.layout === "grid" && categories.length === 3 ? "tiles3" : "tiles"}
+          phoneOnly={data.layout === "grid"}
+        >
           {categories.map((category) => (
             <CategoryTile key={category.slug} category={category} tile="aspect-[4/5]" />
           ))}

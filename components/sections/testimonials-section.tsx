@@ -61,8 +61,9 @@ const TestimonialsSection = async ({ data }: { data: SectionData<"testimonials">
         )}
       </div>
 
-      {data.layout === "carousel" ? (
-        <Carousel label={stripAccents(data.title)} columns="three">
+      {data.layout === "carousel" || data.items.length > 1 ? (
+        // In grid layout, reviews still swipe on phones instead of stacking
+        <Carousel label={stripAccents(data.title)} columns="reviews" phoneOnly={data.layout === "grid"}>
           {data.items.map((item, index) => (
             <Testimonial key={`${item.name}-${index}`} item={item} />
           ))}

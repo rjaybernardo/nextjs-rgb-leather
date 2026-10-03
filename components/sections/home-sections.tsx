@@ -2,7 +2,6 @@ import DealCountdown from "@/components/deal-countdown";
 import { stripAccents } from "@/components/shared/accent-text";
 import FeaturedCarousel from "@/components/shared/product/featured-carousel";
 import ProductCard from "@/components/shared/product/product-card";
-import ProductList from "@/components/shared/product/product-list";
 import {
   getFeaturedProducts,
   getLatestProducts,
@@ -49,20 +48,30 @@ const NewestProductsSection = async ({ data }: { data: SectionData<"newest_produ
     <Section innerClassName="flex flex-col gap-8">
       <SectionHeader title={data.title} linkText="View all" linkUrl="/search" />
 
-      {data.layout === "carousel" ? (
-        <NewestProductsCarousel title={stripAccents(data.title)} products={products} />
-      ) : (
-        <ProductList data={products} />
-      )}
+      {/* In grid layout, products still swipe on phones (one centred, a
+          neighbour peeking on each side) */}
+      <NewestProductsCarousel
+        title={stripAccents(data.title)}
+        products={products}
+        phoneOnly={data.layout === "grid"}
+      />
     </Section>
   );
 };
 
-const NewestProductsCarousel = async ({ title, products }: { title: string; products: Product[] }) => {
+const NewestProductsCarousel = async ({
+  title,
+  products,
+  phoneOnly,
+}: {
+  title: string;
+  products: Product[];
+  phoneOnly: boolean;
+}) => {
   const wishlistIds = new Set(await getMyWishlistIds());
 
   return (
-    <Carousel label={title} columns="four">
+    <Carousel label={title} columns="products" phoneOnly={phoneOnly}>
       {products.map((product) => (
         <ProductCard key={product.slug} product={product} wishlisted={wishlistIds.has(product.id)} />
       ))}

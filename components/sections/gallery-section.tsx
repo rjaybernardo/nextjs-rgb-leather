@@ -57,8 +57,9 @@ const GallerySection = ({ data }: { data: SectionData<"gallery"> }) => {
         )}
       </div>
 
-      {data.layout === "carousel" ? (
-        <Carousel label={stripAccents(data.title)} columns="six">
+      {data.layout === "carousel" || data.images.length > 3 ? (
+        // In grid layout, photos still swipe on phones instead of shrinking
+        <Carousel label={stripAccents(data.title)} columns="photos" phoneOnly={data.layout === "grid"}>
           {data.images.map((item, index) => (
             <GalleryTile key={`${item.imageUrl}-${index}`} item={item} index={index} />
           ))}
