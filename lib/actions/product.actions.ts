@@ -173,7 +173,8 @@ export async function getAllProducts(params: {
   return cachedProductSearch(params);
 }
 
-// Categories that have products, with counts, for navigation and filters
+// Categories that have products, with counts and a cover photo, for
+// navigation, filters and the home page
 const cachedCategories = cachedQuery(
   async () => {
     const categories = await prisma.category.findMany({
@@ -186,6 +187,12 @@ const cachedCategories = cachedQuery(
             products: true,
           },
         },
+        // The newest product's photo is the category's cover
+        products: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { images: true },
+        },
       },
     });
 
@@ -195,6 +202,7 @@ const cachedCategories = cachedQuery(
         name: category.name,
         slug: category.slug,
         count: category._count.products,
+        image: category.products[0]?.images[0] ?? null,
       }));
   },
   ["categories"],

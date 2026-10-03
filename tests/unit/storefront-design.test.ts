@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import AccentText, { stripAccents } from "@/components/shared/accent-text";
 import { isColorOption, swatchColor } from "@/lib/color-swatches";
-import { DESIGN_SECTIONS, DESIGN_SETTINGS } from "@/lib/design-preset";
+import { designSections, DESIGN_SETTINGS } from "@/lib/design-preset";
 import {
   DEFAULT_SITE_SETTINGS,
   SECTION_DEFAULTS,
@@ -65,6 +65,8 @@ describe("home sections", () => {
 });
 
 describe("starter layout preset", () => {
+  const DESIGN_SECTIONS = designSections();
+
   it.each(DESIGN_SECTIONS.map((section) => [section.type, section] as const))(
     "%s section is valid",
     (type, section) => {

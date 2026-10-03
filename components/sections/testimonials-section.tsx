@@ -7,14 +7,14 @@ const TestimonialsSection = async ({ data }: { data: SectionData<"testimonials">
   const summary = data.showSummary === "yes" ? await getReviewSummary() : null;
 
   return (
-    <Section innerClassName="flex flex-col gap-12">
+    <Section tone="stone" innerClassName="flex flex-col gap-10">
       <div className="flex flex-wrap items-end justify-between gap-8">
-        <SectionTitle text={data.title} />
+        <SectionTitle text={data.title} className="text-[clamp(1.75rem,3.4vw,2.75rem)]" />
 
         {summary && summary.count > 0 && (
           <div className="flex min-w-0 items-center gap-7">
             <div>
-              <div className="text-[56px] font-bold leading-none tracking-[-0.04em]">
+              <div className="text-[48px] font-bold leading-none tracking-[-0.04em]">
                 <span className="sr-only">Average rating </span>
                 {summary.average.toFixed(1)}
               </div>
@@ -43,15 +43,15 @@ const TestimonialsSection = async ({ data }: { data: SectionData<"testimonials">
         )}
       </div>
 
-      <ul className="grid gap-5 lg:grid-cols-3">
+      <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {data.items.map((item, index) => (
           <li key={`${item.name}-${index}`}>
-            <figure className="flex h-full flex-col gap-5 rounded-md border bg-card p-8">
-              <div aria-hidden="true" className="tracking-[2px]">
+            <figure className="flex h-full flex-col gap-4 rounded-[var(--radius)] bg-card p-6 sm:p-7">
+              <div aria-hidden="true" className="text-amber-500 tracking-[2px]">
                 ★★★★★
               </div>
-              <blockquote className="font-accent text-[22px] leading-[1.35]">“{item.quote}”</blockquote>
-              <figcaption className="mt-auto flex justify-between gap-3 border-t pt-4 text-[13px] text-muted-foreground">
+              <blockquote className="text-[16px] leading-relaxed">“{item.quote}”</blockquote>
+              <figcaption className="mt-auto flex justify-between gap-3 pt-2 text-[13px] text-muted-foreground">
                 <span>
                   <strong className="font-semibold text-foreground">{item.name}</strong>
                   {item.location && ` · ${item.location}`}

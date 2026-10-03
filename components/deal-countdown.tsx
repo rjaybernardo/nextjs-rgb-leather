@@ -44,9 +44,11 @@ const isFinished = (time: TimeRemaining) =>
   time.days + time.hours + time.minutes + time.seconds === 0;
 
 const StatBox = ({ label, value }: { label: string; value: number }) => (
-  <li className="w-full border-t-2 border-foreground pt-3">
-    <p className="text-[clamp(28px,3vw,40px)] font-bold tracking-[-0.03em] tabular-nums">{value}</p>
-    <p className="text-sm text-muted-foreground">{label}</p>
+  <li className="flex flex-col items-center rounded-[var(--radius)] bg-[var(--tone-panel)] px-2 py-3">
+    <span className="text-[clamp(24px,2.6vw,34px)] font-bold leading-none tracking-[-0.03em] tabular-nums">
+      {String(value).padStart(2, "0")}
+    </span>
+    <span className="mt-1.5 text-xs text-[var(--tone-muted)]">{label}</span>
   </li>
 );
 
@@ -73,43 +75,43 @@ const DealCountdown = ({
   const ended = time !== null && isFinished(time);
 
   return (
-    <Section tone="stone">
-      <div className="grid items-center gap-[clamp(32px,5vw,80px)] lg:grid-cols-2">
-      <div className="flex min-w-0 flex-col justify-center gap-6">
-        <h2 className="h-section">{ended ? "This deal has ended" : <AccentText text={title} />}</h2>
+    <Section innerClassName="py-[clamp(24px,3vw,48px)]">
+      <div className="tone-brand grid overflow-hidden rounded-[calc(var(--radius)*2)] bg-[var(--brand)] text-[var(--brand-foreground)] lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col justify-center gap-6 p-[clamp(24px,5vw,64px)]">
+          <h2 className="h-section text-[clamp(1.75rem,3.6vw,3rem)]">
+            {ended ? "This deal has ended" : <AccentText text={title} />}
+          </h2>
 
-        <p className="max-w-[44ch] text-lg text-muted-foreground">
-          {ended
-            ? "Check out our latest products and promotions."
-            : description}
-        </p>
+          <p className="max-w-[44ch] text-[var(--tone-muted)]">
+            {ended ? "Check out our latest products and promotions." : description}
+          </p>
 
-        {!ended && (
-          // Same layout while loading, so the page doesn't jump
-          <ul className="grid max-w-md grid-cols-4 gap-4" aria-label="Time left">
-            <StatBox label="Days" value={time?.days ?? 0} />
-            <StatBox label="Hours" value={time?.hours ?? 0} />
-            <StatBox label="Minutes" value={time?.minutes ?? 0} />
-            <StatBox label="Seconds" value={time?.seconds ?? 0} />
-          </ul>
-        )}
+          {!ended && (
+            // Same layout while loading, so the page doesn't jump
+            <ul className="grid max-w-sm grid-cols-4 gap-2" aria-label="Time left">
+              <StatBox label="Days" value={time?.days ?? 0} />
+              <StatBox label="Hours" value={time?.hours ?? 0} />
+              <StatBox label="Mins" value={time?.minutes ?? 0} />
+              <StatBox label="Secs" value={time?.seconds ?? 0} />
+            </ul>
+          )}
 
-        {ctaText && ctaUrl && (
-          <div>
-            <Link href={ended ? "/search" : ctaUrl} className={pillButton.dark}>
-              {ended ? "View products" : ctaText}
-            </Link>
-          </div>
-        )}
-      </div>
+          {ctaText && ctaUrl && (
+            <div>
+              <Link href={ended ? "/search" : ctaUrl} className={pillButton.light}>
+                {ended ? "View products" : ctaText}
+              </Link>
+            </div>
+          )}
+        </div>
 
-      <div className="backdrop-media flex aspect-[5/4] min-w-0 items-center justify-center">
-        {imageUrl ? (
-          <Image src={imageUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
-        ) : (
-          <ImagePlaceholder />
-        )}
-      </div>
+        <div className="relative flex aspect-[4/3] min-w-0 items-center justify-center bg-[var(--tone-panel)] lg:aspect-auto lg:min-h-[26rem]">
+          {imageUrl ? (
+            <Image src={imageUrl} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
+          ) : (
+            <ImagePlaceholder />
+          )}
+        </div>
       </div>
     </Section>
   );

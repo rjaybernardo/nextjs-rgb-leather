@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -18,8 +19,8 @@ const CALLOUT_POSITION: Record<SectionData<"hero">["callouts"][number]["position
   "bottom-right": "bottom-[16%] right-[6%]",
 };
 
-const Stars = () => (
-  <span aria-hidden="true" className="text-[15px] tracking-[2px] text-foreground">
+const Stars = ({ className }: { className?: string }) => (
+  <span aria-hidden="true" className={cn("text-[15px] tracking-[2px]", className)}>
     ★★★★★
   </span>
 );
@@ -31,7 +32,7 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
   const actions = (
     <div className="flex flex-wrap gap-3">
       {data.ctaText && data.ctaUrl && (
-        <Link href={data.ctaUrl} className={overlay ? pillButton.light : pillButton.dark}>
+        <Link href={data.ctaUrl} className={cn(pillButton.dark, overlay && "border-white bg-white text-[#111]")}>
           {data.ctaText}
         </Link>
       )}
@@ -47,45 +48,55 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
   );
 
   const proof = (summary?.count || data.trustPoints.length > 0) && (
-    <div
+    <ul
       className={cn(
-        "flex flex-wrap items-center gap-x-7 gap-y-3 pt-2 text-sm",
-        overlay ? "text-white/80" : "text-muted-foreground",
+        "flex flex-wrap items-center gap-x-6 gap-y-2 text-sm",
+        overlay ? "text-white/85" : "text-muted-foreground",
       )}
     >
       {summary && summary.count > 0 && (
-        <div className="flex items-center gap-2">
-          {!overlay && <Stars />}
+        <li className="flex items-center gap-2">
+          <Stars className={overlay ? "text-amber-300" : "text-foreground"} />
           <span>
             <strong className={overlay ? "text-white" : "text-foreground"}>{summary.average.toFixed(1)}</strong> from{" "}
             {summary.count.toLocaleString("en-PH")} {summary.count === 1 ? "review" : "reviews"}
           </span>
-        </div>
+        </li>
       )}
       {data.trustPoints.map((point, index) => (
-        <span key={`${point.text}-${index}`}>{point.text}</span>
+        <li key={`${point.text}-${index}`} className="flex items-center gap-1.5">
+          <Check className="size-4" strokeWidth={2.25} aria-hidden="true" />
+          {point.text}
+        </li>
       ))}
-    </div>
+    </ul>
   );
 
   const heading = (
-    <h1 className="h-display text-[clamp(48px,6.6vw,96px)]">
+    <h1 className="h-display text-[clamp(38px,5vw,72px)]">
       <AccentText text={data.heading} />
     </h1>
   );
 
   if (overlay) {
+    // Photo banner inset from the page edges, text on a bottom-left gradient
     return (
-      <section className="full-bleed relative min-h-[min(80vh,44rem)] overflow-hidden text-white">
-        <Image src={data.imageUrl} alt="" fill sizes="100vw" priority={priority} className="object-cover" />
-        {/* Darkens the photo so the text stays readable */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
+      <section className="full-bleed bg-background">
+        <div className="wrap pt-3 sm:pt-5">
+          <div className="relative isolate flex min-h-[min(78vh,40rem)] items-end overflow-hidden rounded-[calc(var(--radius)*2)] text-white">
+            <Image src={data.imageUrl} alt="" fill sizes="100vw" priority={priority} className="-z-10 object-cover" />
+            {/* Darkens the photo so the text stays readable */}
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/35 to-black/5 sm:bg-gradient-to-tr" />
 
-        <div className="wrap relative flex min-h-[inherit] flex-col justify-center gap-7 py-[clamp(40px,6vw,88px)]">
-          <div className="max-w-3xl">{heading}</div>
-          {data.subheading && <p className="max-w-[34ch] text-[clamp(17px,1.5vw,20px)] text-white/85">{data.subheading}</p>}
-          {actions}
-          {proof}
+            <div className="flex max-w-2xl flex-col gap-6 p-[clamp(24px,5vw,64px)]">
+              {heading}
+              {data.subheading && (
+                <p className="max-w-[40ch] text-[clamp(16px,1.4vw,19px)] text-white/85">{data.subheading}</p>
+              )}
+              {actions}
+              {proof}
+            </div>
+          </div>
         </div>
       </section>
     );
@@ -93,17 +104,17 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
 
   return (
     <section className="full-bleed bg-background">
-      <div className="wrap grid items-center gap-[clamp(32px,5vw,72px)] py-[clamp(40px,6vw,88px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div className="flex min-w-0 flex-col gap-7">
+      <div className="wrap grid items-center gap-[clamp(32px,5vw,72px)] py-[clamp(32px,5vw,72px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
           {heading}
           {data.subheading && (
-            <p className="max-w-[34ch] text-[clamp(17px,1.5vw,20px)] text-muted-foreground">{data.subheading}</p>
+            <p className="max-w-[40ch] text-[clamp(16px,1.4vw,19px)] text-muted-foreground">{data.subheading}</p>
           )}
           {actions}
           {proof}
         </div>
 
-        <figure className="backdrop-media flex aspect-[5/4.4] min-w-0 items-center justify-center">
+        <figure className="backdrop-media flex aspect-[5/4.4] min-w-0 items-center justify-center rounded-[calc(var(--radius)*2)]">
           {data.imageUrl ? (
             <Image
               src={data.imageUrl}

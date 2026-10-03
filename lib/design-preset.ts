@@ -1,36 +1,36 @@
-import type { SectionData, SectionType, SiteSettings } from "@/lib/site-config";
+import { SECTION_DEFAULTS, type SectionData, type SectionType, type SiteSettings } from "@/lib/site-config";
 
 /*
  * The starter storefront layout, ready to edit in Site Studio. Every brand
  * fills in its own wording and photos; the text below is placeholder copy
- * that says what belongs in each spot. Photos are left empty so image
- * placeholders show until real ones are uploaded. Prices are in pesos, for
+ * that says what belongs in each spot. Photos point at the sample images in
+ * public/images until real ones are uploaded. Prices are in pesos, for
  * customers in the Philippines.
+ *
+ * Ordered to convert: a clear offer and button, trust, then products within
+ * one scroll, a time-limited deal, social proof, and answers to objections.
+ * Email sign-up is in the footer, so it isn't repeated here.
  */
 
 type PresetSection = { [T in SectionType]: { type: T; data: SectionData<T> } }[SectionType];
 
-export const DESIGN_SECTIONS: PresetSection[] = [
+// A function so the deal countdown ends 30 days from when it is applied
+export const designSections = (): PresetSection[] => [
   {
     type: "hero",
     data: {
       heading: "Your headline goes here. *Make it memorable.*",
-      subheading:
-        "One or two sentences on what you sell and why customers love it. Keep it short and specific.",
-      imageUrl: "",
+      subheading: "One or two sentences on what you sell and why customers love it.",
+      imageUrl: "/images/banner-1.jpg",
       ctaText: "Shop now",
       ctaUrl: "/search",
-      secondaryCtaText: "Learn more",
-      secondaryCtaUrl: "/#how-it-works",
-      layout: "split",
+      secondaryCtaText: "Browse categories",
+      secondaryCtaUrl: "/#categories",
+      layout: "overlay",
       showRating: "yes",
-      trustPoints: [{ text: "Trust point one" }, { text: "Trust point two" }],
-      callouts: [
-        { text: "Product detail one", position: "top-left" },
-        { text: "Product detail two", position: "middle-right" },
-        { text: "Product detail three", position: "bottom-left" },
-      ],
-      caption: "Product name, variant",
+      trustPoints: [{ text: "Cash on delivery" }, { text: "Easy returns" }],
+      callouts: [],
+      caption: "",
     },
   },
   {
@@ -40,43 +40,36 @@ export const DESIGN_SECTIONS: PresetSection[] = [
       style: "strip",
       items: [
         { icon: "Truck", title: "Nationwide shipping", text: "Delivered anywhere in the Philippines" },
-        { icon: "ShieldCheck", title: "Quality guarantee", text: "Describe your promise here" },
-        { icon: "RotateCcw", title: "Easy returns", text: "Returns within the return period" },
         { icon: "WalletCards", title: "Flexible payment", text: "GCash, Maya, cards or cash on delivery" },
+        { icon: "RotateCcw", title: "Easy returns", text: "Returns within the return period" },
+        { icon: "ShieldCheck", title: "Quality guarantee", text: "Describe your promise here" },
       ],
     },
   },
   {
-    type: "product_tabs",
-    data: { title: "Shop by *category*", count: 4, showAllTab: "no" },
+    type: "newest_products",
+    data: { title: "New *arrivals*", count: 4 },
   },
   {
-    type: "craft",
+    type: "category_grid",
+    data: { title: "Shop by *category*", subtitle: "" },
+  },
+  {
+    type: "deal",
     data: {
-      title: "What goes into *every product*",
-      intro: "A short intro on how your products are made or sourced, and why it matters.",
-      imageUrl: "",
-      points: [
-        { title: "First quality point.", text: "Explain the material, process or detail that sets you apart." },
-        { title: "Second quality point.", text: "Keep each point to one or two sentences." },
-        { title: "Third quality point.", text: "Numbered markers on the photo match these points." },
-        { title: "Fourth quality point.", text: "Remove any points you don't need." },
-      ],
-      comparisonTitle: "How we compare",
-      ourLabel: "Us",
-      theirLabel: "Typical alternative",
-      rows: [
-        { label: "Materials", ours: "What you use", theirs: "What others use" },
-        { label: "Quality", ours: "Your standard", theirs: "The usual standard" },
-        { label: "Durability", ours: "How long yours lasts", theirs: "How long theirs lasts" },
-        { label: "Support", ours: "Your after-sales promise", theirs: "Typical after-sales" },
-      ],
+      title: "Limited-time *deal*",
+      description: "Describe your promotion here: what's on sale and by how much.",
+      // Placeholder date; set the real end date in Site Studio
+      endsAt: SECTION_DEFAULTS.deal().endsAt,
+      imageUrl: "/images/promo.jpg",
+      ctaText: "Shop the sale",
+      ctaUrl: "/search",
     },
   },
   {
     type: "testimonials",
     data: {
-      title: "What our *customers* say",
+      title: "Loved by *customers*",
       showSummary: "yes",
       items: [
         {
@@ -101,51 +94,6 @@ export const DESIGN_SECTIONS: PresetSection[] = [
     },
   },
   {
-    type: "spotlight",
-    data: {
-      badge: "Badge text",
-      title: "Featured product",
-      text: "Describe the product or bundle you want to highlight and why it's worth buying.",
-      bullets: [{ text: "Key benefit one" }, { text: "Key benefit two" }, { text: "Key benefit three" }],
-      imageUrl: "",
-      productSlug: "",
-      compareAtPrice: "",
-      ctaText: "Shop now",
-      ctaUrl: "/search",
-    },
-  },
-  {
-    type: "steps",
-    data: {
-      title: "How it *works*",
-      intro: "A short intro to the steps a customer follows, like ordering, customizing or booking.",
-      steps: [
-        { title: "Step one", text: "Describe the first step." },
-        { title: "Step two", text: "Describe the second step." },
-        { title: "Step three", text: "Describe the third step." },
-        { title: "Step four", text: "Describe the last step." },
-      ],
-      ctaText: "Get started",
-      ctaUrl: "/search",
-    },
-  },
-  {
-    type: "gallery",
-    data: {
-      title: "Photo gallery",
-      linkText: "",
-      linkUrl: "",
-      images: [
-        { imageUrl: "", caption: "Caption" },
-        { imageUrl: "", caption: "Caption" },
-        { imageUrl: "", caption: "Caption" },
-        { imageUrl: "", caption: "Caption" },
-        { imageUrl: "", caption: "Caption" },
-        { imageUrl: "", caption: "Caption" },
-      ],
-    },
-  },
-  {
     type: "faq",
     data: {
       title: "Questions, *answered.*",
@@ -164,10 +112,6 @@ export const DESIGN_SECTIONS: PresetSection[] = [
         {
           question: "Can I return an item?",
           answer: "Replace this with your return policy.",
-        },
-        {
-          question: "Add your own question",
-          answer: "Add the answer here.",
         },
       ],
     },

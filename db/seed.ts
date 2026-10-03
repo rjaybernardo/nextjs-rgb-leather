@@ -1,3 +1,4 @@
+import { designSections } from "@/lib/design-preset";
 import { prisma } from "@/lib/prisma";
 
 import slugify from "slugify";
@@ -51,6 +52,14 @@ async function main() {
   await prisma.user.createMany({
     data: sampleData.users,
   });
+
+  // The starter home page, only when there isn't one: home sections are
+  // the store's own content, edited in Site Studio
+  if ((await prisma.homeSection.count()) === 0) {
+    await prisma.homeSection.createMany({
+      data: designSections().map((section, position) => ({ ...section, position, enabled: true })),
+    });
+  }
 
   console.log("✅ Database seeded successfully.");
 }

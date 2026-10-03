@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { recordAudit } from "@/lib/audit";
-import { DESIGN_SECTIONS, DESIGN_SETTINGS } from "@/lib/design-preset";
+import { designSections, DESIGN_SETTINGS } from "@/lib/design-preset";
 import { assertAdmin, requireAdmin } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, assertRateLimit } from "@/lib/rate-limit";
@@ -95,7 +95,7 @@ export async function applyDesignPreset(): Promise<Result> {
     const settings = siteSettingsSchema.parse(
       mergeSettings(resolveSiteSettings(row?.data), DESIGN_SETTINGS),
     );
-    const sections = DESIGN_SECTIONS.map((section) => ({
+    const sections = designSections().map((section) => ({
       type: section.type,
       data: sectionSchemas[section.type].parse(section.data),
     }));

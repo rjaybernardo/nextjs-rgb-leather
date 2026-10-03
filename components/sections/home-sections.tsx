@@ -15,7 +15,7 @@ import GallerySection from "./gallery-section";
 import HeroSection from "./hero-section";
 import NewsletterSection from "./newsletter-section";
 import ProductTabsSection from "./product-tabs-section";
-import { Section, SectionTitle } from "./section-shell";
+import { Section, SectionHeader, SectionTitle } from "./section-shell";
 import SpotlightSection from "./spotlight-section";
 import StepsSection from "./steps-section";
 import StorySection from "./story-section";
@@ -37,9 +37,11 @@ const FeaturedCarouselSection = async ({ title }: { title: string }) => {
 const NewestProductsSection = async ({ title, count }: { title: string; count: number }) => {
   const products = await getLatestProducts(count);
 
+  if (products.length === 0) return null;
+
   return (
-    <Section innerClassName="flex flex-col gap-10">
-      {title && <SectionTitle text={title} />}
+    <Section innerClassName="flex flex-col gap-8">
+      <SectionHeader title={title} linkText="View all" linkUrl="/search" />
       <ProductList data={products} />
     </Section>
   );

@@ -1,3 +1,6 @@
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+
 import AccentText from "@/components/shared/accent-text";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +24,7 @@ export function Section({
 }: React.ComponentProps<"section"> & { tone?: SectionTone; innerClassName?: string }) {
   return (
     <section className={cn("full-bleed", TONES[tone], className)} {...props}>
-      <div className={cn("wrap py-[clamp(64px,8vw,120px)]", innerClassName)}>{children}</div>
+      <div className={cn("wrap py-[clamp(48px,6vw,96px)]", innerClassName)}>{children}</div>
     </section>
   );
 }
@@ -42,6 +45,43 @@ export function SectionTitle({
     <Tag id={id} className={cn("h-section", className)}>
       <AccentText text={text} />
     </Tag>
+  );
+}
+
+// Title row with an optional "View all" style link on the right
+export function SectionHeader({
+  title,
+  subtitle,
+  linkText,
+  linkUrl,
+  id,
+}: {
+  title: string;
+  subtitle?: string;
+  linkText?: string;
+  linkUrl?: string;
+  id?: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+      <div className="flex min-w-0 flex-col gap-2">
+        <SectionTitle id={id} text={title} className="text-[clamp(1.75rem,3.4vw,2.75rem)]" />
+        {subtitle && <p className="max-w-[48ch] text-muted-foreground">{subtitle}</p>}
+      </div>
+
+      {linkText && linkUrl && (
+        <Link
+          href={linkUrl}
+          className="group inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ring"
+        >
+          {linkText}
+          <ArrowRight
+            className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
+        </Link>
+      )}
+    </div>
   );
 }
 
