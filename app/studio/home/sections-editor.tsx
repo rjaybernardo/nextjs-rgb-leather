@@ -216,9 +216,9 @@ export default function SectionsEditor({ sections }: { sections: Section[] }) {
         <div className="min-w-0 flex-1">
           <div className="font-medium">Use the starter layout</div>
           <p className="text-sm text-muted-foreground">
-            Adds the full store design (hero, shop tabs, details, reviews, spotlight, steps,
-            gallery, FAQ) with placeholder text and image spots to fill in, and sets the Schibsted
-            Grotesk font. Your current sections are hidden, not deleted.
+            Adds the store design (hero, trust strip, new arrivals, categories, deal countdown,
+            reviews, FAQ) with placeholder text and sample photos to replace, and sets the
+            Schibsted Grotesk font. Your current sections are hidden, not deleted.
           </p>
         </div>
 
