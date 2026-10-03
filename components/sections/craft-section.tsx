@@ -16,7 +16,7 @@ const MARKERS = [
 // How it's made, on the accent color, with an optional comparison table
 const CraftSection = ({ data }: { data: SectionData<"craft"> }) => {
   return (
-    <Section tone="brand" id="craft" innerClassName="flex flex-col gap-[clamp(56px,7vw,96px)] py-[clamp(64px,8vw,128px)]">
+    <Section tone="brand" id="craft" innerClassName="flex flex-col gap-[clamp(56px,7vw,96px)]">
       <div className="grid items-center gap-[clamp(32px,5vw,80px)] lg:grid-cols-2">
         <div className="relative flex aspect-square min-w-0 items-center justify-center overflow-hidden rounded-md bg-[var(--tone-panel)]">
           {data.imageUrl ? (
@@ -47,7 +47,7 @@ const CraftSection = ({ data }: { data: SectionData<"craft"> }) => {
                   key={`${point.title}-${index}`}
                   className="grid grid-cols-[40px_minmax(0,1fr)] gap-4 border-t border-[var(--tone-line)] py-[18px]"
                 >
-                  <dt className="font-bold text-[var(--tan)]">
+                  <dt className="font-bold text-[var(--tone-muted)]">
                     <span className="sr-only">Point </span>
                     {index + 1}
                   </dt>

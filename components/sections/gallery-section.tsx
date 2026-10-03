@@ -14,7 +14,7 @@ const GallerySection = ({ data }: { data: SectionData<"gallery"> }) => {
   if (data.images.length === 0) return null;
 
   return (
-    <Section className="border-t" innerClassName="flex flex-col gap-8 py-[clamp(56px,7vw,96px)]">
+    <Section className="border-t" innerClassName="flex flex-col gap-8">
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <h2 className="text-[clamp(24px,2.6vw,34px)] font-bold tracking-[-0.025em]">
           <AccentText text={data.title} />
@@ -46,7 +46,7 @@ const GallerySection = ({ data }: { data: SectionData<"gallery"> }) => {
             )}
 
             {item.caption && (
-              <span className="absolute bottom-2 left-2.5 z-[2] rounded-full bg-[rgba(245,243,238,.9)] px-2 py-0.5 text-[11px] font-semibold text-[#2a2420]">
+              <span className="absolute bottom-2 left-2.5 z-[2] rounded-full bg-[rgba(255,255,255,.9)] px-2 py-0.5 text-[11px] font-semibold text-[#2a2420]">
                 {item.caption}
               </span>
             )}

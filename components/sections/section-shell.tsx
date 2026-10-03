@@ -24,7 +24,11 @@ export function Section({
 }: React.ComponentProps<"section"> & { tone?: SectionTone; innerClassName?: string }) {
   return (
     <section className={cn("full-bleed", TONES[tone], className)} {...props}>
-      <div className={cn("wrap py-[clamp(48px,6vw,96px)]", innerClassName)}>{children}</div>
+      {/* Plain sections share the gap with their neighbours; bands with their
+          own background need more room inside (spacing tokens in globals.css) */}
+      <div className={cn("wrap", tone === "paper" ? "py-[var(--section-y)]" : "py-[var(--band-y)]", innerClassName)}>
+        {children}
+      </div>
     </section>
   );
 }

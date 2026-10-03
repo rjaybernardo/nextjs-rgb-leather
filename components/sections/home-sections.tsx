@@ -84,8 +84,10 @@ const HomeSection = ({ section, isFirst }: { section: HomeSectionView; isFirst: 
 };
 
 const HomeSections = ({ sections }: { sections: HomeSectionView[] }) => (
-  // Sections are full-width bands; cancel the page wrapper's top and bottom padding
-  <div className="-my-5">
+  // Sections are full-width bands; replace the page wrapper's padding with
+  // the section spacing, so the last section is as far from the footer as
+  // sections are from each other
+  <div className="-mt-5 -mb-5 pb-[var(--section-y)]">
     {sections.map((section, index) => (
       <HomeSection key={section.id} section={section} isFirst={index === 0} />
     ))}

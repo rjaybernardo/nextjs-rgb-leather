@@ -205,10 +205,10 @@ html.dark .upload-field .text-white {
 }
 
 /*
- * Storefront theme: warm paper and stone
- * grounds, ink text and buttons, and the Site Studio accent (--brand) for
- * dark sections and badges. Scoped to .storefront so admin and Site Studio
- * keep the default theme.
+ * Storefront theme: clean neutral grounds, ink text and buttons, and the
+ * Site Studio accent (--brand) for promo cards, badges and highlights. The
+ * neutrals have no tint, so they work with whatever accent a brand picks.
+ * Scoped to .storefront so admin and Site Studio keep the default theme.
  */
 :root {
   --brand: #43191a;
@@ -216,32 +216,37 @@ html.dark .upload-field .text-white {
 }
 
 .storefront {
-  --paper: #f5f3ee;
-  --stone: #e8e3da;
-  --backdrop: #e2dcd1;
-  --line: #d6cec1;
-  --night: #1d1a17;
-  --on-night: #f3ece3;
-  --on-night-muted: #cdbdae;
-  --tan: #c8945f;
+  --paper: #ffffff;
+  --stone: #f4f4f5;
+  --backdrop: #f1f1f3;
+  --line: #e4e4e7;
+  --night: #18181b;
+  --on-night: #fafafa;
+  --on-night-muted: #a1a1aa;
+
+  /* Space above and below each home section; two sections in a row share
+     twice this, so the gap between them is the same everywhere */
+  --section-y: clamp(28px, 3.5vw, 48px);
+  /* Inner padding for sections with their own background */
+  --band-y: clamp(48px, 6vw, 88px);
 
   --background: var(--paper);
-  --foreground: #1d1a17;
-  --card: #fbfaf7;
-  --card-foreground: #1d1a17;
-  --popover: #fbfaf7;
-  --popover-foreground: #1d1a17;
-  --primary: #1d1a17;
-  --primary-foreground: #f5f3ee;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
   --secondary: var(--stone);
-  --secondary-foreground: #1d1a17;
+  --secondary-foreground: #18181b;
   --muted: var(--stone);
-  --muted-foreground: #655d54;
+  --muted-foreground: #52525b;
   --accent: var(--stone);
-  --accent-foreground: #1d1a17;
+  --accent-foreground: #18181b;
   --border: var(--line);
   --input: var(--line);
-  --ring: var(--tan);
+  --ring: #71717a;
 
   background: var(--background);
   color: var(--foreground);
@@ -249,22 +254,23 @@ html.dark .upload-field .text-white {
 }
 
 .dark .storefront {
-  --paper: #171412;
-  --stone: #221e1b;
-  --backdrop: #2b2622;
-  --line: #3a332d;
-  --night: #0f0d0c;
+  --paper: #0c0c0d;
+  --stone: #161618;
+  --backdrop: #1c1c1f;
+  --line: #2a2a2e;
+  --night: #000000;
 
-  --foreground: #f3ece3;
-  --card: #1e1a17;
-  --card-foreground: #f3ece3;
-  --popover: #1e1a17;
-  --popover-foreground: #f3ece3;
-  --primary: #f3ece3;
-  --primary-foreground: #171412;
-  --secondary-foreground: #f3ece3;
-  --muted-foreground: #b5a99b;
-  --accent-foreground: #f3ece3;
+  --foreground: #fafafa;
+  --card: #141416;
+  --card-foreground: #fafafa;
+  --popover: #141416;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #0c0c0d;
+  --secondary-foreground: #fafafa;
+  --muted-foreground: #a1a1aa;
+  --accent-foreground: #fafafa;
+  --ring: #a1a1aa;
 }
 
 /* Pill buttons, as in the design */

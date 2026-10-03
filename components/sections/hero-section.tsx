@@ -104,7 +104,7 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
 
   return (
     <section className="full-bleed bg-background">
-      <div className="wrap grid items-center gap-[clamp(32px,5vw,72px)] py-[clamp(32px,5vw,72px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <div className="wrap grid items-center gap-[clamp(32px,5vw,72px)] py-[var(--section-y)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <div className="flex min-w-0 flex-col gap-6">
           {heading}
           {data.subheading && (
@@ -132,17 +132,17 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
             <span
               key={`${callout.text}-${index}`}
               className={cn(
-                "absolute z-[2] flex items-center gap-2 whitespace-nowrap rounded-full bg-[rgba(245,243,238,.94)] py-[5px] pl-1.5 pr-2.5 text-[11px] font-semibold text-[#1d1a17] sm:py-[7px] sm:pl-2 sm:pr-3.5 sm:text-[13px]",
+                "absolute z-[2] flex items-center gap-2 whitespace-nowrap rounded-full bg-[rgba(255,255,255,.94)] py-[5px] pl-1.5 pr-2.5 text-[11px] font-semibold text-[#18181b] sm:py-[7px] sm:pl-2 sm:pr-3.5 sm:text-[13px]",
                 CALLOUT_POSITION[callout.position],
               )}
             >
-              <i className="inline-block size-2.5 rounded-full bg-[#1d1a17] shadow-[0_0_0_4px_rgba(29,26,23,.15)]" />
+              <i className="inline-block size-2.5 rounded-full bg-[#18181b] shadow-[0_0_0_4px_rgba(24,24,27,.15)]" />
               {callout.text}
             </span>
           ))}
 
           {data.caption && (
-            <figcaption className="absolute bottom-4 right-4 z-[2] text-xs font-medium text-[#655d54]">
+            <figcaption className="absolute bottom-4 right-4 z-[2] text-xs font-medium text-[#52525b]">
               {data.caption}
             </figcaption>
           )}

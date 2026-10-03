@@ -75,7 +75,7 @@ const DealCountdown = ({
   const ended = time !== null && isFinished(time);
 
   return (
-    <Section innerClassName="py-[clamp(24px,3vw,48px)]">
+    <Section>
       <div className="tone-brand grid overflow-hidden rounded-[calc(var(--radius)*2)] bg-[var(--brand)] text-[var(--brand-foreground)] lg:grid-cols-2">
         <div className="flex min-w-0 flex-col justify-center gap-6 p-[clamp(24px,5vw,64px)]">
           <h2 className="h-section text-[clamp(1.75rem,3.6vw,3rem)]">

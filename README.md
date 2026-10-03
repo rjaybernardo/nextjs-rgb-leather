@@ -2,6 +2,16 @@ A modern full-stack e-commerce application built with **Next.js 16**, **React 19
 
 This project started from an older Next.js e-commerce tutorial and has been progressively modernized to use current APIs, patterns, and dependencies instead of following outdated implementations directly.
 
+## 📸 Screenshots
+
+The storefront home page with the starter layout and seed data. Every section
+is editable in Site Studio, and the gray images are placeholders to replace
+with real photos.
+
+| Desktop | Mobile |
+| --- | --- |
+| <img src="docs/screenshots/home-desktop.jpg" alt="Home page on desktop" width="560"> | <img src="docs/screenshots/home-mobile.jpg" alt="Home page on mobile" width="200"> |
+
 ## 🚀 Project Overview
 
 Prostore is a full-stack e-commerce application designed to provide a complete shopping experience, including:
@@ -453,11 +463,20 @@ Check the database migration status:
 npx prisma migrate status
 ```
 
-Seed the development database when required:
+Seed the development database with dummy data:
 
 ```bash
 npx prisma db seed
 ```
+
+The seed creates two sample categories, six sample products, an admin
+(`admin@example.com` / `123456`) and a customer (`user@example.com` /
+`123456`), and adds the starter home page if the database has none.
+
+> **Warning:** seeding first deletes all products, categories, brands, orders,
+> carts and users. Run it only against a development database, never the one
+> your live store uses. Site Studio content (settings, home sections, pages)
+> is kept.
 
 Start the development server:
 

@@ -14,7 +14,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-[var(--on-night)] bg-[var(--on-night)] px-7 text-[15px] font-semibold text-[var(--brand)] transition-colors hover:bg-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tan)]"
+      className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-[var(--on-night)] bg-[var(--on-night)] px-7 text-[15px] font-semibold text-[var(--brand)] transition-colors hover:bg-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--on-night-muted)]"
     >
       {pending ? "Signing up..." : "Sign up"}
     </button>
@@ -46,7 +46,7 @@ export default function FooterNewsletter() {
           required
           autoComplete="email"
           placeholder="Email address"
-          className="min-h-[52px] min-w-0 flex-1 rounded-full border border-[rgba(243,236,227,0.3)] bg-transparent px-5 text-[15px] text-[var(--on-night)] placeholder:text-[var(--on-night-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tan)]"
+          className="min-h-[52px] min-w-0 flex-1 rounded-full border border-[color-mix(in_oklab,var(--on-night)_30%,transparent)] bg-transparent px-5 text-[15px] text-[var(--on-night)] placeholder:text-[var(--on-night-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--on-night-muted)]"
         />
         <SubmitButton />
       </div>

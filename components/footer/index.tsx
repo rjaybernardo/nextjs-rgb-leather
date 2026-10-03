@@ -47,7 +47,7 @@ const Footer = async () => {
     <footer className="bg-[var(--night)] text-[var(--on-night)]">
       <div className="wrap flex flex-col gap-16 pb-8 pt-[clamp(56px,7vw,96px)]">
         {(footer.newsletterTitle || footer.newsletterText) && (
-          <div className="grid items-end gap-[clamp(32px,5vw,80px)] border-b border-[rgba(243,236,227,0.14)] pb-14 lg:grid-cols-2">
+          <div className="grid items-end gap-[clamp(32px,5vw,80px)] border-b border-[color-mix(in_oklab,var(--on-night)_14%,transparent)] pb-14 lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-3.5">
               {footer.newsletterTitle && (
                 <h2 className="h-section text-[var(--on-night)]">
@@ -81,7 +81,7 @@ const Footer = async () => {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex min-h-9 items-center rounded-full border border-[rgba(243,236,227,0.22)] px-3.5 text-xs font-semibold text-[var(--on-night)] hover:bg-[rgba(243,236,227,0.08)]"
+                      className="inline-flex min-h-9 items-center rounded-full border border-[color-mix(in_oklab,var(--on-night)_22%,transparent)] px-3.5 text-xs font-semibold text-[var(--on-night)] hover:bg-[color-mix(in_oklab,var(--on-night)_8%,transparent)]"
                     >
                       {link.label}
                     </a>
@@ -140,7 +140,7 @@ const Footer = async () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-5 border-t border-[rgba(243,236,227,0.14)] pt-6 text-[13px] text-[var(--on-night-muted)]">
+        <div className="flex flex-wrap items-center justify-between gap-5 border-t border-[color-mix(in_oklab,var(--on-night)_14%,transparent)] pt-6 text-[13px] text-[var(--on-night-muted)]">
           <span>{copyright}</span>
 
           {chips.length > 0 && (
@@ -148,7 +148,7 @@ const Footer = async () => {
               {chips.map((chip) => (
                 <li
                   key={chip}
-                  className="inline-flex h-7 items-center rounded border border-[rgba(243,236,227,0.22)] px-2.5 text-xs font-semibold"
+                  className="inline-flex h-7 items-center rounded border border-[color-mix(in_oklab,var(--on-night)_22%,transparent)] px-2.5 text-xs font-semibold"
                 >
                   {chip}
                 </li>

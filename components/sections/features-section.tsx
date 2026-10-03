@@ -50,7 +50,7 @@ const FeaturesSection = ({ data }: { data: SectionData<"features"> }) => {
   const strip = data.style === "strip";
 
   return (
-    <Section innerClassName={cn(strip && "py-6 sm:py-8")}>
+    <Section>
       {data.title && <SectionTitle text={data.title} className="mb-10 text-[clamp(1.75rem,3.4vw,2.75rem)]" />}
 
       <ul
