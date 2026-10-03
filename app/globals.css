@@ -223,9 +223,11 @@ html.dark .upload-field .text-white {
   --stone: color-mix(in oklab, var(--brand) 6%, #ffffff);
   --backdrop: color-mix(in oklab, var(--brand) 8%, #ffffff);
   --line: color-mix(in oklab, var(--brand) 13%, #ffffff);
-  --night: color-mix(in oklab, var(--brand) 55%, #000000);
-  --on-night: #ffffff;
-  --on-night-muted: color-mix(in oklab, var(--brand) 25%, #ffffff 60%);
+  /* Footer and announcement bar: the accent itself, so the page has one
+     dark color, the same one as the buttons */
+  --night: var(--brand);
+  --on-night: var(--brand-foreground);
+  --on-night-muted: color-mix(in oklab, var(--brand-foreground) 72%, transparent);
   /* The brand as text or outline on the page ground */
   --brand-ink: var(--brand);
   /* A soft brand wash for badges and highlights */
@@ -267,7 +269,9 @@ html.dark .upload-field .text-white {
   --stone: color-mix(in oklab, var(--brand) 16%, #111113);
   --backdrop: color-mix(in oklab, var(--brand) 18%, #161618);
   --line: color-mix(in oklab, var(--brand) 22%, #26262a);
-  --night: color-mix(in oklab, var(--brand) 25%, #000000);
+  --night: color-mix(in oklab, var(--brand) 40%, #000000);
+  --on-night: #fafafa;
+  --on-night-muted: #a1a1aa;
   /* Dark accents need lifting to read on a dark page */
   --brand-ink: color-mix(in oklab, var(--brand) 45%, #ffffff);
   --brand-soft: color-mix(in oklab, var(--brand) 35%, #111113);
