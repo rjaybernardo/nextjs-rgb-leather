@@ -147,6 +147,9 @@ test("Studio changes show up on the storefront", async ({ page, browser }) => {
         .first();
       const show = row.getByRole("button", { name: "Show" });
 
+      // isVisible() doesn't wait: let the list render before reading its state
+      await expect(row.getByRole("button", { name: /^(Show|Hide)$/ })).toBeVisible();
+
       // Skip sections that are already shown
       if (await show.isVisible()) {
         await show.click();

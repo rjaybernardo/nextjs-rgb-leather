@@ -38,6 +38,10 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
 const ReviewForm = ({ productId, review }: ReviewFormProps) => {
   const [state, action] = useActionState(upsertReview, initialState);
   const [rating, setRating] = useState(review?.rating ?? 0);
+  // Starting text stays fixed while the form is open: after posting, the
+  // fields already hold the saved review, and changing an input's default
+  // after it mounts isn't supported
+  const [initial] = useState(review);
 
   return (
     <form action={action} className="space-y-4 rounded-lg border p-4">
@@ -88,7 +92,7 @@ const ReviewForm = ({ productId, review }: ReviewFormProps) => {
           required
           minLength={3}
           maxLength={120}
-          defaultValue={review?.title}
+          defaultValue={initial?.title}
           placeholder="Sum it up in a few words"
         />
       </div>
@@ -103,7 +107,7 @@ const ReviewForm = ({ productId, review }: ReviewFormProps) => {
           minLength={3}
           maxLength={2000}
           rows={4}
-          defaultValue={review?.description}
+          defaultValue={initial?.description}
           placeholder="How's the quality, fit and value?"
         />
       </div>

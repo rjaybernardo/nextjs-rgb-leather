@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { getMyCart } from "@/lib/actions/cart.actions";
+import { getMyCartWithCurrentPrices } from "@/lib/actions/cart.actions";
 
 import CartTable from "./cart-table";
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const CartPage = async () => {
-  const cart = await getMyCart();
+  const cart = await getMyCartWithCurrentPrices();
 
   return (
     <>

@@ -14,7 +14,15 @@ export default function DeleteSubscriberButton({ id, email }: { id: string; emai
 
   if (!confirming) {
     return (
-      <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(true)}>
+      // Names include the visible words plus the email, so screen readers can
+      // tell the rows apart and voice control can still say what it sees
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-label={`Remove ${email}`}
+        onClick={() => setConfirming(true)}
+      >
         Remove
       </Button>
     );
@@ -27,7 +35,7 @@ export default function DeleteSubscriberButton({ id, email }: { id: string; emai
         variant="destructive"
         size="sm"
         disabled={isPending}
-        aria-label={`Remove ${email}`}
+        aria-label={`Yes, remove ${email}`}
         onClick={() =>
           startTransition(async () => {
             const result = await deleteSubscriber(id);
@@ -38,7 +46,7 @@ export default function DeleteSubscriberButton({ id, email }: { id: string; emai
       >
         Yes, remove
       </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+      <Button type="button" variant="ghost" size="sm" aria-label={`Keep ${email}`} onClick={() => setConfirming(false)}>
         Keep
       </Button>
     </span>

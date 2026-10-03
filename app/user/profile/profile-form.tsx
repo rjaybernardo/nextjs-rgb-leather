@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toast";
 import { updateProfile } from "@/lib/actions/user.actions";
 import { updateProfileSchema } from "@/lib/validators";
 
@@ -34,7 +34,7 @@ const ProfileForm = () => {
     const res = await updateProfile(values);
 
     if (!res.success) {
-      toast.error(res.message);
+      toast.add({ type: "error", description: res.message });
       return;
     }
 
@@ -44,7 +44,8 @@ const ProfileForm = () => {
       },
     });
 
-    toast.success(res.message);
+    // The site's toast system (sonner isn't mounted, so its toasts never showed)
+    toast.add({ type: "success", description: res.message });
   }
 
   return (

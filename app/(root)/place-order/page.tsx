@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getMyCart } from "@/lib/actions/cart.actions";
+import { getMyCartWithCurrentPrices } from "@/lib/actions/cart.actions";
 import { getUserById } from "@/lib/actions/user.actions";
 import { getPaymentMethodLabel } from "@/lib/constants";
 import { getCheckoutPaymentMethods } from "@/lib/integrations";
@@ -41,7 +41,7 @@ const PlaceOrderPage = async () => {
   }
 
   const [cart, user, { methods }] = await Promise.all([
-    getMyCart(),
+    getMyCartWithCurrentPrices(),
     getUserById(userId),
     getCheckoutPaymentMethods(),
   ]);

@@ -268,6 +268,36 @@ export async function getMyCart() {
   };
 }
 
+/*
+ * The cart with prices worked out now, for the cart and checkout pages.
+ * Stored prices date from the cart's last change, so a shipping fee or
+ * discount code edited in admin since then would show one total and charge
+ * another (placing the order always re-prices). Saves the fresh prices when
+ * they differ, so the stored cart catches up.
+ */
+export async function getMyCartWithCurrentPrices() {
+  const cart = await getMyCart();
+
+  if (!cart) {
+    return undefined;
+  }
+
+  const userId = (await auth())?.user?.id;
+  const prices = await priceCart(cart.items, cart.couponCode, userId);
+
+  const changed =
+    prices.couponCode !== (cart.couponCode ?? null) ||
+    (["itemsPrice", "shippingPrice", "discountPrice", "taxPrice", "totalPrice"] as const).some(
+      (key) => prices[key] !== cart[key],
+    );
+
+  if (changed) {
+    await prisma.cart.update({ where: { id: cart.id }, data: prices });
+  }
+
+  return { ...cart, ...prices };
+}
+
 // Checkout: apply a discount code to the signed-in customer's cart
 export async function applyCoupon(rawCode: string) {
   try {

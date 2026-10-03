@@ -134,6 +134,10 @@ export function PaymentSettingsForm({
 
 export function EmailSettingsForm({ settings }: { settings: { from: string; replyTo: string } }) {
   const [state, action] = useActionState(updateEmailSettings, initialState);
+  // Starting values stay fixed while the form is open: the inputs already
+  // hold what was saved, and changing an input's default after it mounts
+  // isn't supported
+  const [initial] = useState(settings);
   const [test, setTest] = useState(initialState);
   const [isTesting, startTest] = useTransition();
 
@@ -145,7 +149,7 @@ export function EmailSettingsForm({ settings }: { settings: { from: string; repl
           <Input
             id="emailFrom"
             name="emailFrom"
-            defaultValue={settings.from}
+            defaultValue={initial.from}
             placeholder="Your Store <orders@yourstore.ph>"
             aria-describedby="emailFrom-help"
           />
@@ -157,7 +161,7 @@ export function EmailSettingsForm({ settings }: { settings: { from: string; repl
 
         <div className="space-y-1">
           <Label htmlFor="emailReplyTo">Customer replies go to (optional)</Label>
-          <Input id="emailReplyTo" name="emailReplyTo" type="email" defaultValue={settings.replyTo} placeholder="help@yourstore.ph" />
+          <Input id="emailReplyTo" name="emailReplyTo" type="email" defaultValue={initial.replyTo} placeholder="help@yourstore.ph" />
         </div>
 
         <SaveButton label="Save email settings" />
@@ -183,6 +187,8 @@ export function EmailSettingsForm({ settings }: { settings: { from: string; repl
 
 export function GoogleSettingsForm({ clientId, redirectUri }: { clientId: string; redirectUri: string }) {
   const [state, action] = useActionState(updateGoogleSettings, initialState);
+  // Fixed while the form is open, as in EmailSettingsForm
+  const [initialClientId] = useState(clientId);
 
   return (
     <form action={action} className="space-y-4">
@@ -191,7 +197,7 @@ export function GoogleSettingsForm({ clientId, redirectUri }: { clientId: string
         <Input
           id="googleClientId"
           name="googleClientId"
-          defaultValue={clientId}
+          defaultValue={initialClientId}
           placeholder="1234567890-abc.apps.googleusercontent.com"
           className="font-mono"
           spellCheck={false}

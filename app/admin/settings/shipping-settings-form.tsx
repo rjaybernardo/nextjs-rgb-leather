@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,10 @@ function SaveButton() {
 
 const ShippingSettingsForm = ({ settings }: { settings: ShippingSettings }) => {
   const [state, action] = useActionState(updateShippingSettings, initialState);
+  // Starting values stay fixed while the form is open: the inputs already
+  // hold what was saved, and changing an input's default after it mounts
+  // isn't supported
+  const [initial] = useState(settings);
 
   return (
     <form action={action} className="space-y-4">
@@ -41,7 +45,7 @@ const ShippingSettingsForm = ({ settings }: { settings: ShippingSettings }) => {
           min={0}
           step="0.01"
           required
-          defaultValue={settings.shippingFee}
+          defaultValue={initial.shippingFee}
         />
       </div>
 
@@ -56,7 +60,7 @@ const ShippingSettingsForm = ({ settings }: { settings: ShippingSettings }) => {
           min={0}
           step="0.01"
           required
-          defaultValue={settings.freeShippingMin}
+          defaultValue={initial.freeShippingMin}
         />
 
         <p className="text-xs text-muted-foreground">

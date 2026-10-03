@@ -7,13 +7,19 @@ import { MoonIcon, SunIcon, SunMoonIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const THEMES = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+] as const;
 
 const emptySubscribe = () => () => {};
 
@@ -50,29 +56,15 @@ const ModeToggle = () => {
         <DropdownMenuGroup>
           <DropdownMenuLabel>Appearance</DropdownMenuLabel>
 
-          <DropdownMenuCheckboxItem
-            checked={theme === "system"}
-            onCheckedChange={() => setTheme("system")}
-          >
-            System
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={theme === "light"}
-            onCheckedChange={() => setTheme("light")}
-          >
-            Light
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={theme === "dark"}
-            onCheckedChange={() => setTheme("dark")}
-          >
-            Dark
-          </DropdownMenuCheckboxItem>
+          {/* One choice, so radio items; the menu closes once one is picked */}
+          <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(String(value))}>
+            {THEMES.map((option) => (
+              <DropdownMenuRadioItem key={option.value} value={option.value} closeOnClick>
+                {option.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
       </DropdownMenuContent>
     </DropdownMenu>
   );
