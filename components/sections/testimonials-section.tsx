@@ -1,7 +1,25 @@
+import { stripAccents } from "@/components/shared/accent-text";
 import { getReviewSummary } from "@/lib/actions/product.actions";
 import type { SectionData } from "@/lib/site-config";
 
+import { Carousel } from "./carousel";
 import { Section, SectionTitle } from "./section-shell";
+
+const Testimonial = ({ item }: { item: SectionData<"testimonials">["items"][number] }) => (
+  <figure className="flex h-full flex-col gap-4 rounded-[var(--radius)] bg-card p-6 sm:p-7">
+    <div aria-hidden="true" className="tracking-[2px] text-amber-500">
+      ★★★★★
+    </div>
+    <blockquote className="text-[16px] leading-relaxed">“{item.quote}”</blockquote>
+    <figcaption className="mt-auto flex justify-between gap-3 pt-2 text-[13px] text-muted-foreground">
+      <span>
+        <strong className="font-semibold text-foreground">{item.name}</strong>
+        {item.location && ` · ${item.location}`}
+      </span>
+      {item.product && <span className="text-right">{item.product}</span>}
+    </figcaption>
+  </figure>
+);
 
 const TestimonialsSection = async ({ data }: { data: SectionData<"testimonials"> }) => {
   const summary = data.showSummary === "yes" ? await getReviewSummary() : null;
@@ -43,25 +61,21 @@ const TestimonialsSection = async ({ data }: { data: SectionData<"testimonials">
         )}
       </div>
 
-      <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {data.items.map((item, index) => (
-          <li key={`${item.name}-${index}`}>
-            <figure className="flex h-full flex-col gap-4 rounded-[var(--radius)] bg-card p-6 sm:p-7">
-              <div aria-hidden="true" className="text-amber-500 tracking-[2px]">
-                ★★★★★
-              </div>
-              <blockquote className="text-[16px] leading-relaxed">“{item.quote}”</blockquote>
-              <figcaption className="mt-auto flex justify-between gap-3 pt-2 text-[13px] text-muted-foreground">
-                <span>
-                  <strong className="font-semibold text-foreground">{item.name}</strong>
-                  {item.location && ` · ${item.location}`}
-                </span>
-                {item.product && <span className="text-right">{item.product}</span>}
-              </figcaption>
-            </figure>
-          </li>
-        ))}
-      </ul>
+      {data.layout === "carousel" ? (
+        <Carousel label={stripAccents(data.title)} columns="three">
+          {data.items.map((item, index) => (
+            <Testimonial key={`${item.name}-${index}`} item={item} />
+          ))}
+        </Carousel>
+      ) : (
+        <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {data.items.map((item, index) => (
+            <li key={`${item.name}-${index}`}>
+              <Testimonial item={item} />
+            </li>
+          ))}
+        </ul>
+      )}
     </Section>
   );
 };

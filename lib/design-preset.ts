@@ -31,6 +31,8 @@ export const designSections = (): PresetSection[] => [
       trustPoints: [{ text: "Cash on delivery" }, { text: "Easy returns" }],
       callouts: [],
       caption: "",
+      slides: [],
+      autoplay: "yes",
     },
   },
   {
@@ -48,11 +50,11 @@ export const designSections = (): PresetSection[] => [
   },
   {
     type: "newest_products",
-    data: { title: "New *arrivals*", count: 4 },
+    data: { title: "New *arrivals*", count: 4, layout: "grid" },
   },
   {
     type: "category_grid",
-    data: { title: "Shop by *category*", subtitle: "" },
+    data: { title: "Shop by *category*", subtitle: "", layout: "grid" },
   },
   {
     type: "deal",
@@ -71,6 +73,7 @@ export const designSections = (): PresetSection[] => [
     data: {
       title: "Loved by *customers*",
       showSummary: "yes",
+      layout: "grid",
       items: [
         {
           quote: "Replace this with a real review from a happy customer. Specific details make it believable.",

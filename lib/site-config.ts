@@ -195,6 +195,9 @@ export const FEATURE_ICONS = [
   "Sparkles",
 ] as const;
 
+// Grid or a sideways-scrolling carousel, for sections with a row of cards
+const cardLayout = z.enum(["grid", "carousel"]);
+
 const featureItem = z.object({
   icon: z.enum(FEATURE_ICONS),
   title: z.string().trim().min(1, "Add a title").max(60),
@@ -222,6 +225,19 @@ export const sectionSchemas = {
       )
       .max(4),
     caption: optionalText(80),
+    // More slides make the banner a carousel; the fields above are slide 1
+    slides: z
+      .array(
+        z.object({
+          heading: z.string().trim().min(1, "Add a heading").max(120),
+          subheading: optionalText(240),
+          imageUrl: imageLink,
+          ctaText: optionalText(40),
+          ctaUrl: link,
+        }),
+      )
+      .max(4),
+    autoplay: z.enum(["yes", "no"]),
   }),
   featured_carousel: z.object({
     title: optionalText(80),
@@ -229,10 +245,12 @@ export const sectionSchemas = {
   newest_products: z.object({
     title: z.string().trim().min(1, "Add a title").max(80),
     count: z.coerce.number().int().min(4).max(12),
+    layout: cardLayout,
   }),
   category_grid: z.object({
     title: z.string().trim().min(1, "Add a title").max(80),
     subtitle: optionalText(160),
+    layout: cardLayout,
   }),
   deal: z.object({
     title: z.string().trim().min(1, "Add a title").max(80),
@@ -261,6 +279,7 @@ export const sectionSchemas = {
   testimonials: z.object({
     title: z.string().trim().min(1, "Add a title").max(80),
     showSummary: z.enum(["yes", "no"]),
+    layout: cardLayout,
     items: z
       .array(
         z.object({
@@ -350,6 +369,7 @@ export const sectionSchemas = {
     title: z.string().trim().min(1, "Add a title").max(80),
     linkText: optionalText(60),
     linkUrl: link,
+    layout: cardLayout,
     images: z
       .array(z.object({ imageUrl: imageLink, caption: optionalText(40) }))
       .max(12),
@@ -384,10 +404,12 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
     trustPoints: [],
     callouts: [],
     caption: "",
+    slides: [],
+    autoplay: "yes",
   }),
   featured_carousel: () => ({ title: "" }),
-  newest_products: () => ({ title: "Newest Arrivals", count: 4 }),
-  category_grid: () => ({ title: "Shop by category", subtitle: "" }),
+  newest_products: () => ({ title: "Newest Arrivals", count: 4, layout: "grid" }),
+  category_grid: () => ({ title: "Shop by category", subtitle: "", layout: "grid" }),
   deal: () => ({
     title: "Deals of the Month",
     description: "Limited-time prices on selected products.",
@@ -417,6 +439,7 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
   testimonials: () => ({
     title: "What customers say",
     showSummary: "yes",
+    layout: "grid",
     items: [{ quote: "Replace this with a real customer review.", name: "Customer name", location: "City", product: "" }],
   }),
   faq: () => ({
@@ -474,6 +497,7 @@ export const SECTION_DEFAULTS: { [T in SectionType]: () => SectionData<T> } = {
     title: "Photo gallery",
     linkText: "",
     linkUrl: "",
+    layout: "grid",
     images: [
       { imageUrl: "", caption: "" },
       { imageUrl: "", caption: "" },
@@ -511,6 +535,17 @@ export type FieldDef =
 const iconOptions = FEATURE_ICONS.map((icon) => ({ value: icon, label: icon }));
 
 const ACCENT_HELP = "Wrap words in *asterisks* for the italic accent.";
+
+const layoutField = (help: string): FieldDef => ({
+  key: "layout",
+  label: "Layout",
+  type: "select",
+  options: [
+    { value: "grid", label: "Grid" },
+    { value: "carousel", label: "Carousel (swipe sideways)" },
+  ],
+  help,
+});
 
 const CALLOUT_POSITIONS = [
   { value: "top-left", label: "Top left" },
@@ -550,6 +585,21 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
       ],
     },
     { key: "caption", label: "Photo caption (optional)", type: "text", max: 80 },
+    {
+      key: "slides",
+      label: "More slides (makes the banner a carousel)",
+      type: "list",
+      itemLabel: "Slide",
+      help: "The fields above are the first slide. Add up to 4 more; each has its own photo, heading and button.",
+      fields: [
+        { key: "heading", label: "Heading", type: "text", max: 120, help: ACCENT_HELP },
+        { key: "subheading", label: "Subheading", type: "textarea", max: 240 },
+        { key: "imageUrl", label: "Photo", type: "image" },
+        { key: "ctaText", label: "Button text", type: "text", max: 40 },
+        { key: "ctaUrl", label: "Button link", type: "url" },
+      ],
+    },
+    { key: "autoplay", label: "Change slides automatically", type: "select", options: [{ value: "yes", label: "Yes, every 6 seconds" }, { value: "no", label: "No, customers use the arrows" }], help: "Pauses while the mouse is over the banner, and for visitors who turn off animations." },
   ],
   featured_carousel: [
     { key: "title", label: "Title (optional)", type: "text", max: 80, help: "Shows products marked Featured that have a banner image." },
@@ -557,10 +607,12 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
   newest_products: [
     { key: "title", label: "Title", type: "text", max: 80 },
     { key: "count", label: "How many products", type: "number", min: 4, max: 12 },
+    layoutField("A carousel fits more products in less space; set a higher count to use it."),
   ],
   category_grid: [
     { key: "title", label: "Title", type: "text", max: 80 },
     { key: "subtitle", label: "Subtitle", type: "text", max: 160 },
+    layoutField("Use a carousel when you have more than four categories."),
   ],
   deal: [
     { key: "title", label: "Title", type: "text", max: 80 },
@@ -596,6 +648,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
   testimonials: [
     { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
     { key: "showSummary", label: "Rating summary from your reviews", type: "select", options: [{ value: "yes", label: "Shown" }, { value: "no", label: "Hidden" }] },
+    layoutField("A carousel suits more than three testimonials."),
     {
       key: "items",
       label: "Testimonials",
@@ -701,6 +754,7 @@ export const SECTION_FIELDS: Record<SectionType, FieldDef[]> = {
     { key: "title", label: "Title", type: "text", max: 80, help: ACCENT_HELP },
     { key: "linkText", label: "Link text (optional)", type: "text", max: 60, help: "e.g. Share yours with #YourBrand" },
     { key: "linkUrl", label: "Link", type: "url" },
+    layoutField("A carousel shows the photos as a swipeable strip."),
     {
       key: "images",
       label: "Photos",

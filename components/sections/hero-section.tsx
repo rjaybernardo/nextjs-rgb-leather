@@ -7,6 +7,7 @@ import { getReviewSummary } from "@/lib/actions/product.actions";
 import type { SectionData } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
+import HeroCarousel from "./hero-carousel";
 import { ImagePlaceholder } from "./image-placeholder";
 import { pillButton } from "./section-shell";
 
@@ -25,23 +26,49 @@ const Stars = ({ className }: { className?: string }) => (
   </span>
 );
 
-const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; priority?: boolean }) => {
-  const summary = data.showRating === "yes" ? await getReviewSummary() : null;
-  const overlay = data.layout === "overlay" && Boolean(data.imageUrl);
+type Slide = {
+  heading: string;
+  subheading: string;
+  imageUrl: string;
+  ctaText: string;
+  ctaUrl: string;
+  secondaryCtaText?: string;
+  secondaryCtaUrl?: string;
+};
+
+type Summary = Awaited<ReturnType<typeof getReviewSummary>> | null;
+
+// One banner slide; the first one also carries the photo callouts and caption
+const HeroSlide = ({
+  data,
+  slide,
+  summary,
+  first,
+  priority,
+}: {
+  data: SectionData<"hero">;
+  slide: Slide;
+  summary: Summary;
+  first: boolean;
+  priority?: boolean;
+}) => {
+  const overlay = data.layout === "overlay" && Boolean(slide.imageUrl);
+  // One h1 per page: later slides are h2
+  const Heading = first ? "h1" : "h2";
 
   const actions = (
     <div className="flex flex-wrap gap-3">
-      {data.ctaText && data.ctaUrl && (
-        <Link href={data.ctaUrl} className={cn(pillButton.dark, overlay && "border-white bg-white text-[#111]")}>
-          {data.ctaText}
+      {slide.ctaText && slide.ctaUrl && (
+        <Link href={slide.ctaUrl} className={cn(pillButton.dark, overlay && "border-white bg-white text-[#111]")}>
+          {slide.ctaText}
         </Link>
       )}
-      {data.secondaryCtaText && data.secondaryCtaUrl && (
+      {slide.secondaryCtaText && slide.secondaryCtaUrl && (
         <Link
-          href={data.secondaryCtaUrl}
+          href={slide.secondaryCtaUrl}
           className={cn(pillButton.ghost, overlay && "border-white text-white hover:bg-white hover:text-black")}
         >
-          {data.secondaryCtaText}
+          {slide.secondaryCtaText}
         </Link>
       )}
     </div>
@@ -73,62 +100,58 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
   );
 
   const heading = (
-    <h1 className="h-display text-[clamp(38px,5vw,72px)]">
-      <AccentText text={data.heading} />
-    </h1>
+    <Heading className="h-display text-[clamp(38px,5vw,72px)]">
+      <AccentText text={slide.heading} />
+    </Heading>
   );
 
   if (overlay) {
     // Photo banner inset from the page edges, text on a bottom-left gradient
     return (
-      <section className="full-bleed bg-background">
-        <div className="wrap pt-3 sm:pt-5">
-          <div className="relative isolate flex min-h-[min(78vh,40rem)] items-end overflow-hidden rounded-[calc(var(--radius)*2)] text-white">
-            <Image src={data.imageUrl} alt="" fill sizes="100vw" priority={priority} className="-z-10 object-cover" />
-            {/* Darkens the photo so the text stays readable */}
-            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/35 to-black/5 sm:bg-gradient-to-tr" />
+      <div className="relative isolate flex h-full min-h-[min(78vh,40rem)] items-end overflow-hidden rounded-[calc(var(--radius)*2)] text-white">
+        <Image src={slide.imageUrl} alt="" fill sizes="100vw" priority={priority} className="-z-10 object-cover" />
+        {/* Darkens the photo so the text stays readable */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/35 to-black/5 sm:bg-gradient-to-tr" />
 
-            <div className="flex max-w-2xl flex-col gap-6 p-[clamp(24px,5vw,64px)]">
-              {heading}
-              {data.subheading && (
-                <p className="max-w-[40ch] text-[clamp(16px,1.4vw,19px)] text-white/85">{data.subheading}</p>
-              )}
-              {actions}
-              {proof}
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="full-bleed bg-background">
-      <div className="wrap grid items-center gap-[clamp(32px,5vw,72px)] py-[var(--section-y)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex max-w-2xl flex-col gap-6 p-[clamp(24px,5vw,64px)]">
           {heading}
-          {data.subheading && (
-            <p className="max-w-[40ch] text-[clamp(16px,1.4vw,19px)] text-muted-foreground">{data.subheading}</p>
+          {slide.subheading && (
+            <p className="max-w-[40ch] text-[clamp(16px,1.4vw,19px)] text-white/85">{slide.subheading}</p>
           )}
           {actions}
           {proof}
         </div>
+      </div>
+    );
+  }
 
-        <figure className="backdrop-media flex aspect-[5/4.4] min-w-0 items-center justify-center rounded-[calc(var(--radius)*2)]">
-          {data.imageUrl ? (
-            <Image
-              src={data.imageUrl}
-              alt={data.caption ? stripAccents(data.caption) : ""}
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              priority={priority}
-              className="object-cover"
-            />
-          ) : (
-            <ImagePlaceholder />
-          )}
+  return (
+    <div className="grid h-full items-center gap-[clamp(32px,5vw,72px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <div className="flex min-w-0 flex-col gap-6">
+        {heading}
+        {slide.subheading && (
+          <p className="max-w-[40ch] text-[clamp(16px,1.4vw,19px)] text-muted-foreground">{slide.subheading}</p>
+        )}
+        {actions}
+        {proof}
+      </div>
 
-          {data.callouts.map((callout, index) => (
+      <figure className="backdrop-media flex aspect-[5/4.4] min-w-0 items-center justify-center rounded-[calc(var(--radius)*2)]">
+        {slide.imageUrl ? (
+          <Image
+            src={slide.imageUrl}
+            alt={first && data.caption ? stripAccents(data.caption) : ""}
+            fill
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            priority={priority}
+            className="object-cover"
+          />
+        ) : (
+          <ImagePlaceholder />
+        )}
+
+        {first &&
+          data.callouts.map((callout, index) => (
             <span
               key={`${callout.text}-${index}`}
               className={cn(
@@ -141,12 +164,42 @@ const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; prio
             </span>
           ))}
 
-          {data.caption && (
-            <figcaption className="absolute bottom-4 right-4 z-[2] text-xs font-medium text-[#52525b]">
-              {data.caption}
-            </figcaption>
-          )}
-        </figure>
+        {first && data.caption && (
+          <figcaption className="absolute bottom-4 right-4 z-[2] text-xs font-medium text-[#52525b]">
+            {data.caption}
+          </figcaption>
+        )}
+      </figure>
+    </div>
+  );
+};
+
+// The banner: one slide, or a carousel when More slides are added in Studio
+const HeroSection = async ({ data, priority }: { data: SectionData<"hero">; priority?: boolean }) => {
+  const summary = data.showRating === "yes" ? await getReviewSummary() : null;
+
+  const slides: Slide[] = [data, ...data.slides];
+  const rendered = slides.map((slide, index) => (
+    <HeroSlide
+      key={index}
+      data={data}
+      slide={slide}
+      summary={summary}
+      first={index === 0}
+      priority={priority && index === 0}
+    />
+  ));
+
+  return (
+    <section className="full-bleed bg-background">
+      <div className={cn("wrap", data.layout === "overlay" ? "pt-3 sm:pt-5" : "py-[var(--section-y)]")}>
+        {rendered.length > 1 ? (
+          <HeroCarousel label={stripAccents(data.heading)} autoplay={data.autoplay === "yes"}>
+            {rendered}
+          </HeroCarousel>
+        ) : (
+          rendered[0]
+        )}
       </div>
     </section>
   );

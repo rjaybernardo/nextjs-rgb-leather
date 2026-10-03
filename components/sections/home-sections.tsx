@@ -1,12 +1,18 @@
 import DealCountdown from "@/components/deal-countdown";
+import { stripAccents } from "@/components/shared/accent-text";
 import FeaturedCarousel from "@/components/shared/product/featured-carousel";
+import ProductCard from "@/components/shared/product/product-card";
 import ProductList from "@/components/shared/product/product-list";
 import {
   getFeaturedProducts,
   getLatestProducts,
 } from "@/lib/actions/product.actions";
+import { getMyWishlistIds } from "@/lib/actions/wishlist.actions";
 import type { HomeSectionView } from "@/lib/site";
+import type { SectionData } from "@/lib/site-config";
+import type { Product } from "@/types";
 
+import { Carousel } from "./carousel";
 import CategoryGridSection from "./category-grid-section";
 import CraftSection from "./craft-section";
 import FaqSection from "./faq-section";
@@ -34,16 +40,33 @@ const FeaturedCarouselSection = async ({ title }: { title: string }) => {
   );
 };
 
-const NewestProductsSection = async ({ title, count }: { title: string; count: number }) => {
-  const products = await getLatestProducts(count);
+const NewestProductsSection = async ({ data }: { data: SectionData<"newest_products"> }) => {
+  const products = await getLatestProducts(data.count);
 
   if (products.length === 0) return null;
 
   return (
     <Section innerClassName="flex flex-col gap-8">
-      <SectionHeader title={title} linkText="View all" linkUrl="/search" />
-      <ProductList data={products} />
+      <SectionHeader title={data.title} linkText="View all" linkUrl="/search" />
+
+      {data.layout === "carousel" ? (
+        <NewestProductsCarousel title={stripAccents(data.title)} products={products} />
+      ) : (
+        <ProductList data={products} />
+      )}
     </Section>
+  );
+};
+
+const NewestProductsCarousel = async ({ title, products }: { title: string; products: Product[] }) => {
+  const wishlistIds = new Set(await getMyWishlistIds());
+
+  return (
+    <Carousel label={title} columns="four">
+      {products.map((product) => (
+        <ProductCard key={product.slug} product={product} wishlisted={wishlistIds.has(product.id)} />
+      ))}
+    </Carousel>
   );
 };
 
@@ -55,7 +78,7 @@ const HomeSection = ({ section, isFirst }: { section: HomeSectionView; isFirst: 
     case "featured_carousel":
       return <FeaturedCarouselSection title={section.data.title} />;
     case "newest_products":
-      return <NewestProductsSection title={section.data.title} count={section.data.count} />;
+      return <NewestProductsSection data={section.data} />;
     case "category_grid":
       return <CategoryGridSection data={section.data} />;
     case "deal":

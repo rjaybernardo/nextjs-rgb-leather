@@ -54,6 +54,28 @@ describe("home sections", () => {
     expect(SECTION_FIELDS[type].length).toBeGreaterThan(0);
   });
 
+  it.each(["newest_products", "category_grid", "testimonials", "gallery"] as const)(
+    "%s accepts the carousel layout, and sections saved before it load as a grid",
+    (type) => {
+      const carousel = { ...SECTION_DEFAULTS[type](), layout: "carousel" };
+      expect(sectionSchemas[type].safeParse(carousel).success).toBe(true);
+
+      // Saved data is merged over the defaults when read (lib/site.ts)
+      const saved: Record<string, unknown> = { ...SECTION_DEFAULTS[type]() };
+      delete saved.layout;
+      const loaded = sectionSchemas[type].parse({ ...SECTION_DEFAULTS[type](), ...saved });
+      expect(loaded.layout).toBe("grid");
+    },
+  );
+
+  it("accepts up to four extra hero slides", () => {
+    const slide = { heading: "Slide", subheading: "", imageUrl: "/images/banner-2.jpg", ctaText: "Shop", ctaUrl: "/search" };
+    const hero = (count: number) => ({ ...SECTION_DEFAULTS.hero(), slides: Array(count).fill(slide) });
+
+    expect(sectionSchemas.hero.safeParse(hero(4)).success).toBe(true);
+    expect(sectionSchemas.hero.safeParse(hero(5)).success).toBe(false);
+  });
+
   it("rejects a spotlight product address with spaces", () => {
     const result = sectionSchemas.spotlight.safeParse({
       ...SECTION_DEFAULTS.spotlight(),
