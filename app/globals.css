@@ -205,9 +205,12 @@ html.dark .upload-field .text-white {
 }
 
 /*
- * Storefront theme: clean neutral grounds, ink text and buttons, and the
- * Site Studio accent (--brand) for promo cards, badges and highlights. The
- * neutrals have no tint, so they work with whatever accent a brand picks.
+ * Storefront theme, derived from the Site Studio accent (--brand) so any
+ * accent gives a coherent palette:
+ * - neutrals carry a trace of the brand hue, so grounds, lines and text
+ *   belong with the accent instead of fighting it
+ * - the brand color marks what matters: main buttons, badges, highlights
+ * - dark areas (footer, announcement bar) are a deep shade of the brand
  * Scoped to .storefront so admin and Site Studio keep the default theme.
  */
 :root {
@@ -216,13 +219,17 @@ html.dark .upload-field .text-white {
 }
 
 .storefront {
-  --paper: #ffffff;
-  --stone: #f4f4f5;
-  --backdrop: #f1f1f3;
-  --line: #e4e4e7;
-  --night: #18181b;
-  --on-night: #fafafa;
-  --on-night-muted: #a1a1aa;
+  --paper: color-mix(in oklab, var(--brand) 2%, #ffffff);
+  --stone: color-mix(in oklab, var(--brand) 6%, #ffffff);
+  --backdrop: color-mix(in oklab, var(--brand) 8%, #ffffff);
+  --line: color-mix(in oklab, var(--brand) 13%, #ffffff);
+  --night: color-mix(in oklab, var(--brand) 55%, #000000);
+  --on-night: #ffffff;
+  --on-night-muted: color-mix(in oklab, var(--brand) 25%, #ffffff 60%);
+  /* The brand as text or outline on the page ground */
+  --brand-ink: var(--brand);
+  /* A soft brand wash for badges and highlights */
+  --brand-soft: color-mix(in oklab, var(--brand) 12%, #ffffff);
 
   /* Space above and below each home section; two sections in a row share
      twice this, so the gap between them is the same everywhere */
@@ -230,23 +237,25 @@ html.dark .upload-field .text-white {
   /* Inner padding for sections with their own background */
   --band-y: clamp(48px, 6vw, 88px);
 
+  --ink: color-mix(in oklab, var(--brand) 22%, #0b0b0c);
+
   --background: var(--paper);
-  --foreground: #18181b;
+  --foreground: var(--ink);
   --card: #ffffff;
-  --card-foreground: #18181b;
+  --card-foreground: var(--ink);
   --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
   --secondary: var(--stone);
-  --secondary-foreground: #18181b;
+  --secondary-foreground: var(--ink);
   --muted: var(--stone);
-  --muted-foreground: #52525b;
+  --muted-foreground: color-mix(in oklab, var(--brand) 25%, #4b4b52);
   --accent: var(--stone);
-  --accent-foreground: #18181b;
+  --accent-foreground: var(--ink);
   --border: var(--line);
   --input: var(--line);
-  --ring: #71717a;
+  --ring: var(--brand);
 
   background: var(--background);
   color: var(--foreground);
@@ -254,23 +263,20 @@ html.dark .upload-field .text-white {
 }
 
 .dark .storefront {
-  --paper: #0c0c0d;
-  --stone: #161618;
-  --backdrop: #1c1c1f;
-  --line: #2a2a2e;
-  --night: #000000;
+  --paper: color-mix(in oklab, var(--brand) 10%, #09090a);
+  --stone: color-mix(in oklab, var(--brand) 16%, #111113);
+  --backdrop: color-mix(in oklab, var(--brand) 18%, #161618);
+  --line: color-mix(in oklab, var(--brand) 22%, #26262a);
+  --night: color-mix(in oklab, var(--brand) 25%, #000000);
+  /* Dark accents need lifting to read on a dark page */
+  --brand-ink: color-mix(in oklab, var(--brand) 45%, #ffffff);
+  --brand-soft: color-mix(in oklab, var(--brand) 35%, #111113);
 
-  --foreground: #fafafa;
-  --card: #141416;
-  --card-foreground: #fafafa;
-  --popover: #141416;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #0c0c0d;
-  --secondary-foreground: #fafafa;
-  --muted-foreground: #a1a1aa;
-  --accent-foreground: #fafafa;
-  --ring: #a1a1aa;
+  --ink: color-mix(in oklab, var(--brand) 6%, #fafafa);
+  --card: color-mix(in oklab, var(--brand) 14%, #0f0f11);
+  --popover: var(--card);
+  --muted-foreground: color-mix(in oklab, var(--brand) 18%, #a1a1aa);
+  --ring: var(--brand-ink);
 }
 
 /* Pill buttons, as in the design */

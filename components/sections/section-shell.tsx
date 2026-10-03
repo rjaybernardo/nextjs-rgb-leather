@@ -76,7 +76,7 @@ export function SectionHeader({
       {linkText && linkUrl && (
         <Link
           href={linkUrl}
-          className="group inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ring"
+          className="group inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand-ink)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ring"
         >
           {linkText}
           <ArrowRight
@@ -92,9 +92,9 @@ export function SectionHeader({
 const pill =
   "inline-flex min-h-[52px] items-center justify-center gap-2.5 rounded-full border-[1.5px] px-[30px] text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ring motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50";
 
-// Pill buttons from the design: dark, outlined, and light (on the accent color)
+// Pill buttons: brand-filled (main action), outlined, and light (on the accent color)
 export const pillButton = {
-  dark: cn(pill, "border-foreground bg-foreground text-background hover:opacity-85"),
+  dark: cn(pill, "border-[var(--brand)] bg-[var(--brand)] text-[var(--brand-foreground)] hover:opacity-90"),
   ghost: cn(pill, "border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background"),
   light: cn(
     pill,

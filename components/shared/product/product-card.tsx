@@ -121,7 +121,7 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
               "absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-xs font-semibold",
               stock <= 0
                 ? "bg-[var(--night)] text-[var(--on-night)]"
-                : "bg-background text-foreground",
+                : "bg-[var(--brand-soft)] text-[var(--brand-ink)]",
             )}
           >
             {badge}
@@ -140,7 +140,7 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
 
       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
         <h3 className="min-w-0 text-[15px] font-semibold tracking-[-0.01em] sm:text-[17px]">
-          <Link href={href} className="hover:text-[var(--brand)]">
+          <Link href={href} className="hover:text-[var(--brand-ink)]">
             {product.name}
           </Link>
         </h3>
@@ -189,7 +189,7 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
       {needsProductPage ? (
         <Link
           href={href}
-          className="inline-flex min-h-[46px] w-full items-center justify-center rounded-full border-[1.5px] border-foreground text-sm font-semibold transition-colors hover:bg-foreground hover:text-background"
+          className="inline-flex min-h-[46px] w-full items-center justify-center rounded-full border-[1.5px] border-[var(--brand-ink)] text-sm font-semibold text-[var(--brand-ink)] transition-colors hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-[var(--brand-foreground)]"
         >
           Choose options
         </Link>
@@ -198,7 +198,7 @@ const ProductCard = ({ product, wishlisted }: ProductCardProps) => {
           type="button"
           onClick={addToBag}
           disabled={isPending || stock <= 0}
-          className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-foreground text-sm font-semibold transition-colors hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-[var(--brand-ink)] text-sm font-semibold text-[var(--brand-ink)] transition-colors hover:border-[var(--brand)] hover:bg-[var(--brand)] hover:text-[var(--brand-foreground)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           {isPending && <Loader className="size-4 animate-spin" aria-hidden="true" />}
           {stock <= 0 ? "Sold out" : added ? "Added to bag" : "Add to bag"}

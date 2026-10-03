@@ -64,7 +64,7 @@ const FeaturesSection = ({ data }: { data: SectionData<"features"> }) => {
 
           return (
             <li key={`${item.title}-${index}`} className={cn("flex gap-3", strip ? "items-start" : "flex-col")}>
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--stone)]">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--brand-ink)]">
                 <Icon className="size-5" strokeWidth={1.75} aria-hidden="true" />
               </span>
               <div className="min-w-0">

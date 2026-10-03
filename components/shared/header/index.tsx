@@ -40,7 +40,7 @@ const Header = async () => {
 
             <nav aria-label="Main" className="hidden items-center gap-8 text-[15px] font-medium lg:flex">
               {links.map((link) => (
-                <Link key={link.href} href={link.href} className="transition-colors hover:text-[var(--brand)]">
+                <Link key={link.href} href={link.href} className="transition-colors hover:text-[var(--brand-ink)]">
                   {link.label}
                 </Link>
               ))}

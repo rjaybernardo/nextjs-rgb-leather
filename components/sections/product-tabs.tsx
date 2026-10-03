@@ -60,7 +60,7 @@ const ProductTabs = ({
       )}
 
       <div>
-        <Link href={tab.href} className="text-[15px] font-semibold underline underline-offset-4 hover:text-[var(--brand)]">
+        <Link href={tab.href} className="text-[15px] font-semibold underline underline-offset-4 hover:text-[var(--brand-ink)]">
           Shop all {tab.label === "All" ? "products" : tab.label}
         </Link>
       </div>
